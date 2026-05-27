@@ -110,7 +110,7 @@ Database dùng SQL Server với EF Core migration. DbContext chính là `SqlServ
 | Nhóm | Bảng/entity |
 | --- | --- |
 | Tài khoản và phân quyền | `Users`, `Roles`, `UserRoles`, module/function liên quan |
-| Bóng đá | `Teams`, `Stadiums`, `StadiumSections`, `FootballMatch` |
+| Bóng đá | `Teams`, `Seasons`, `MatchRounds`, `Stadiums`, `StadiumSections`, `FootballMatch` |
 | Bán vé | `TicketListings`, `TicketOrders`, `TicketOrderItems` |
 | Thanh toán | `Payments` |
 | Vé điện tử và check-in | `ETickets`, `TicketCheckins` |
@@ -118,7 +118,10 @@ Database dùng SQL Server với EF Core migration. DbContext chính là `SqlServ
 
 Quan hệ chính:
 
+- Một `Season` có nhiều `MatchRound`.
+- Một `MatchRound` thuộc một `Season` và có tối đa 10 trận.
 - Một `FootballMatch` gắn với sân vận động và hai đội bóng.
+- Một `FootballMatch` thuộc một `Season` và một `MatchRound`.
 - Một `FootballMatch` có nhiều `TicketListing`.
 - Một `TicketOrder` thuộc về một user và có nhiều `TicketOrderItem`.
 - Một `Payment` thuộc về một `TicketOrder`.
@@ -126,6 +129,15 @@ Quan hệ chính:
 - `TicketCheckin` ghi lại lịch sử check-in của từng `ETicket`.
 
 Điểm hợp lý của database hiện tại là đã tách rõ ticket listing, order item, payment và e-ticket. Nhờ vậy hệ thống có thể mở rộng các trạng thái như pending, paid, cancelled, issued, used mà không làm rối logic đặt vé.
+
+Phần lịch thi đấu đã bổ sung mô hình mùa giải/vòng đấu:
+
+- Seed sẵn mùa `2026-2027`.
+- Seed sẵn `Vòng 1`.
+- Các trận cũ được gán vào mùa `2026-2027` và `Vòng 1`.
+- Backend validate `HomeTeamId != AwayTeamId`.
+- Trong cùng một vòng, mỗi đội chỉ được xuất hiện một lần.
+- Mỗi vòng tối đa 10 trận, phù hợp Premier League 20 đội.
 
 ### 4.3. Backend API
 
@@ -135,6 +147,7 @@ Gateway đang expose các nhóm endpoint chính:
 | --- | --- | --- |
 | Auth | `POST /api/auth/login` | Đăng nhập và lấy JWT |
 | Matches | `GET /api/matches`, `GET /api/matches/{slug}/tickets` | Xem trận đấu và vé |
+| Match rounds | `GET /api/matches/rounds?season=2026-2027` | Xem danh sách vòng đấu theo mùa |
 | Tickets | `POST /api/tickets/orders`, `GET /api/tickets/etickets` | Tạo đơn và xem e-ticket |
 | Payments | `POST /api/payments`, `POST /api/payments/{id}/confirm` | Tạo và xác nhận thanh toán |
 | Check-in | `POST /api/checkins` | Admin check-in QR/mã vé |
@@ -145,6 +158,8 @@ Luồng backend đã được test thành công:
 
 - Đăng nhập user/admin.
 - Lấy danh sách trận.
+- Lọc trận theo mùa/vòng bằng `GET /api/matches?season=2026-2027&round=1`.
+- Lấy danh sách vòng bằng `GET /api/matches/rounds?season=2026-2027`.
 - Lấy ticket listing theo slug.
 - Tạo order.
 - Tạo payment.
@@ -152,6 +167,7 @@ Luồng backend đã được test thành công:
 - Sinh e-ticket.
 - Check-in thành công.
 - Check-in trùng trả về `409 Conflict`.
+- Validate admin tạo trận: đội nhà trùng đội khách trả `400`, đội đã đá trong cùng vòng trả `409`, vòng đủ 10 trận trả `409`.
 
 Backend hiện là phần hoàn thiện nhất của project: có transaction khi confirm payment, có kiểm tra quyền theo JWT, có tách controller theo nghiệp vụ và có tài liệu test riêng trong `docs/backend-api-test-result.md`.
 
@@ -202,6 +218,8 @@ Kết quả chính:
 | Backend build | Thành công, 0 warning, 0 error |
 | Vulnerability audit | Không còn package vulnerable theo NuGet audit |
 | API E2E | Đặt vé, payment, e-ticket, check-in OK |
+| Season/Round API | `GET /api/matches`, filter season/round, `GET /api/matches/rounds` OK |
+| Match round validation | home == away `400`, đội trùng vòng `409`, vòng đủ 10 trận `409` |
 | Duplicate check-in | Trả về `409` đúng mong đợi |
 | Frontend build | `npm run build` thành công |
 | Frontend route smoke | `/login`, `/payments/1`, `/my-tickets`, `/admin/checkin` trả về `200 OK` |
@@ -218,7 +236,9 @@ Hạn chế của kiểm thử:
 | Hạng mục | Trạng thái |
 | --- | --- |
 | Database ticket booking | Hoàn thành mức demo |
+| Database Season/MatchRound | Hoàn thành mức demo |
 | Backend API đặt vé | Hoàn thành |
+| Backend API lịch theo mùa/vòng | Hoàn thành |
 | Payment và sinh e-ticket | Hoàn thành mức demo |
 | QR/check-in | Hoàn thành mức demo |
 | Admin API | Có CRUD/read chính |

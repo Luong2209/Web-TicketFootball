@@ -1,6 +1,6 @@
 # Backend API Test Result
 
-Test date: 2026-05-26
+Test date: 2026-05-27
 
 ## Environment
 
@@ -49,6 +49,8 @@ Sample tested result:
 | Endpoint | Result |
 | --- | --- |
 | `GET /api/admin/matches` | OK |
+| `GET /api/admin/seasons` | OK |
+| `GET /api/admin/rounds?season=2026-2027` | OK |
 | `GET /api/admin/stadiums` | OK |
 | `GET /api/admin/stadiums/{id}/sections` | OK |
 | `GET /api/admin/tickets?matchId=1` | OK |
@@ -57,6 +59,47 @@ Sample tested result:
 | CRUD match | OK |
 | CRUD section | OK |
 | CRUD ticket | OK |
+
+## Season And Match Round API
+
+| Step | Endpoint / Rule | Result |
+| --- | --- | --- |
+| Get matches with season/round fields | `GET /api/matches` | OK |
+| Filter matches by season and round | `GET /api/matches?season=2026-2027&round=1` | OK |
+| Get rounds by season | `GET /api/matches/rounds?season=2026-2027` | OK |
+| Admin validation: same home/away team | `POST /api/admin/matches` | `400` OK |
+| Admin validation: team appears twice in same round | `POST /api/admin/matches` | `409` OK |
+| Admin validation: eleventh match in same round | `POST /api/admin/matches` | `409` OK |
+
+Sample Season/MatchRound read result:
+
+```json
+{
+  "matchesCount": 3,
+  "filteredCount": 3,
+  "roundsCount": 1,
+  "firstMatch": "man-utd-liverpool",
+  "firstMatchSeason": "2026-2027",
+  "firstMatchRound": "Vòng 1",
+  "firstRoundMatchCount": 3
+}
+```
+
+Sample validation result:
+
+```json
+{
+  "homeEqualsAway": 400,
+  "duplicateTeamInRound": 409,
+  "createdTenMatches": [200, 200, 200, 200, 200, 200, 200, 200, 200, 200],
+  "eleventhMatchWhenRoundFull": 409,
+  "cleanup": {
+    "testMatches": 0,
+    "testRounds": 0,
+    "testClubs": 0
+  }
+}
+```
 
 Sample admin read result:
 

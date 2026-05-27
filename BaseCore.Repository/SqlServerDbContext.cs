@@ -16,6 +16,8 @@ namespace BaseCore.Repository
         // DbSet for each entity
         public DbSet<User> Users { get; set; }
         public DbSet<Team> Teams { get; set; }
+        public DbSet<Season> Seasons { get; set; }
+        public DbSet<MatchRound> MatchRounds { get; set; }
         public DbSet<Stadium> Stadiums { get; set; }
         public DbSet<StadiumSection> StadiumSections { get; set; }
         public DbSet<FootballMatch> Matches { get; set; }
@@ -40,9 +42,13 @@ namespace BaseCore.Repository
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.UserName).HasMaxLength(50).IsRequired();
                 entity.Property(e => e.Password).HasMaxLength(255).IsRequired();
-                entity.Property(e => e.Name).HasMaxLength(100);
-                entity.Property(e => e.Email).HasMaxLength(100);
-                entity.Property(e => e.Phone).HasMaxLength(20);
+                entity.Property(e => e.Salt).IsRequired();
+                entity.Property(e => e.Name).HasMaxLength(100).IsRequired();
+                entity.Property(e => e.Email).HasMaxLength(100).IsRequired();
+                entity.Property(e => e.Phone).HasMaxLength(20).IsRequired();
+                entity.Property(e => e.Contact).IsRequired();
+                entity.Property(e => e.Position).IsRequired();
+                entity.Property(e => e.Image).IsRequired();
                 entity.HasIndex(e => e.UserName).IsUnique();
             });
 
@@ -51,9 +57,9 @@ namespace BaseCore.Repository
                 entity.ToTable("Clubs");
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Name).HasMaxLength(120).IsRequired();
-                entity.Property(e => e.City).HasMaxLength(80);
-                entity.Property(e => e.Country).HasMaxLength(80);
-                entity.Property(e => e.LogoUrl).HasMaxLength(500);
+                entity.Property(e => e.City).HasMaxLength(80).IsRequired();
+                entity.Property(e => e.Country).HasMaxLength(80).IsRequired();
+                entity.Property(e => e.LogoUrl).HasMaxLength(500).IsRequired();
                 entity.HasIndex(e => e.Name).IsUnique();
             });
 
@@ -61,9 +67,9 @@ namespace BaseCore.Repository
             {
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Name).HasMaxLength(160).IsRequired();
-                entity.Property(e => e.City).HasMaxLength(80);
-                entity.Property(e => e.Country).HasMaxLength(80);
-                entity.Property(e => e.ImageUrl).HasMaxLength(500);
+                entity.Property(e => e.City).HasMaxLength(80).IsRequired();
+                entity.Property(e => e.Country).HasMaxLength(80).IsRequired();
+                entity.Property(e => e.ImageUrl).HasMaxLength(500).IsRequired();
             });
 
             modelBuilder.Entity<StadiumSection>(entity =>
@@ -85,6 +91,32 @@ namespace BaseCore.Repository
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
+            modelBuilder.Entity<Season>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Name).HasMaxLength(40).IsRequired();
+                entity.HasIndex(e => e.Name).IsUnique();
+                entity.HasMany(e => e.Rounds)
+                      .WithOne(e => e.Season)
+                      .HasForeignKey(e => e.SeasonId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasMany(e => e.Matches)
+                      .WithOne(e => e.Season)
+                      .HasForeignKey(e => e.SeasonId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<MatchRound>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Name).HasMaxLength(80).IsRequired();
+                entity.HasIndex(e => new { e.SeasonId, e.RoundNumber }).IsUnique();
+                entity.HasMany(e => e.Matches)
+                      .WithOne(e => e.Round)
+                      .HasForeignKey(e => e.RoundId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
             modelBuilder.Entity<FootballMatch>(entity =>
             {
                 entity.ToTable("Matches");
@@ -93,6 +125,8 @@ namespace BaseCore.Repository
                 entity.Property(e => e.Competition).HasMaxLength(120).IsRequired();
                 entity.Property(e => e.Status).HasMaxLength(40).IsRequired();
                 entity.HasIndex(e => e.Slug).IsUnique();
+                entity.HasIndex(e => new { e.RoundId, e.HomeTeamId });
+                entity.HasIndex(e => new { e.RoundId, e.AwayTeamId });
                 entity.HasOne(e => e.HomeTeam)
                       .WithMany()
                       .HasForeignKey(e => e.HomeTeamId)
@@ -105,6 +139,14 @@ namespace BaseCore.Repository
                       .WithMany()
                       .HasForeignKey(e => e.StadiumId)
                       .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(e => e.Season)
+                      .WithMany(e => e.Matches)
+                      .HasForeignKey(e => e.SeasonId)
+                      .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(e => e.Round)
+                      .WithMany(e => e.Matches)
+                      .HasForeignKey(e => e.RoundId)
+                      .OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<TicketListing>(entity =>
@@ -112,10 +154,10 @@ namespace BaseCore.Repository
                 entity.ToTable("Tickets");
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Title).HasMaxLength(160).IsRequired();
-                entity.Property(e => e.RowLabel).HasMaxLength(80);
-                entity.Property(e => e.SellerName).HasMaxLength(160);
-                entity.Property(e => e.TicketType).HasMaxLength(40);
-                entity.Property(e => e.DeliveryMethod).HasMaxLength(80);
+                entity.Property(e => e.RowLabel).HasMaxLength(80).IsRequired();
+                entity.Property(e => e.SellerName).HasMaxLength(160).IsRequired();
+                entity.Property(e => e.TicketType).HasMaxLength(40).IsRequired();
+                entity.Property(e => e.DeliveryMethod).HasMaxLength(80).IsRequired();
                 entity.Property(e => e.UnitPrice).HasPrecision(18, 2);
                 entity.HasOne(e => e.Match)
                       .WithMany(m => m.TicketListings)
@@ -134,10 +176,10 @@ namespace BaseCore.Repository
                 entity.Property(e => e.UserId).IsRequired();
                 entity.Property(e => e.TotalAmount).HasPrecision(18, 2);
                 entity.Property(e => e.Status).HasMaxLength(40).IsRequired();
-                entity.Property(e => e.CustomerName).HasMaxLength(120);
-                entity.Property(e => e.CustomerEmail).HasMaxLength(160);
-                entity.Property(e => e.CustomerPhone).HasMaxLength(40);
-                entity.Property(e => e.Note).HasMaxLength(500);
+                entity.Property(e => e.CustomerName).HasMaxLength(120).IsRequired();
+                entity.Property(e => e.CustomerEmail).HasMaxLength(160).IsRequired();
+                entity.Property(e => e.CustomerPhone).HasMaxLength(40).IsRequired();
+                entity.Property(e => e.Note).HasMaxLength(500).IsRequired();
                 entity.HasOne(e => e.User)
                       .WithMany()
                       .HasForeignKey(e => e.UserId)
@@ -191,10 +233,10 @@ namespace BaseCore.Repository
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.PaymentCode).HasMaxLength(80).IsRequired();
                 entity.Property(e => e.Method).HasMaxLength(40).IsRequired();
-                entity.Property(e => e.Provider).HasMaxLength(80);
+                entity.Property(e => e.Provider).HasMaxLength(80).IsRequired();
                 entity.Property(e => e.Status).HasMaxLength(40).IsRequired();
                 entity.Property(e => e.Amount).HasPrecision(18, 2);
-                entity.Property(e => e.TransactionId).HasMaxLength(120);
+                entity.Property(e => e.TransactionId).HasMaxLength(120).IsRequired();
                 entity.HasIndex(e => e.PaymentCode).IsUnique();
                 entity.HasOne(e => e.TicketOrder)
                       .WithMany(o => o.Payments)
@@ -208,7 +250,7 @@ namespace BaseCore.Repository
                 entity.Property(e => e.UserId).IsRequired();
                 entity.Property(e => e.TicketCode).HasMaxLength(80).IsRequired();
                 entity.Property(e => e.QrCodePayload).HasMaxLength(1000).IsRequired();
-                entity.Property(e => e.HolderName).HasMaxLength(120);
+                entity.Property(e => e.HolderName).HasMaxLength(120).IsRequired();
                 entity.Property(e => e.Status).HasMaxLength(40).IsRequired();
                 entity.HasIndex(e => e.TicketCode).IsUnique();
                 entity.HasOne(e => e.TicketOrder)
@@ -229,11 +271,11 @@ namespace BaseCore.Repository
             {
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.CheckinCode).HasMaxLength(80).IsRequired();
-                entity.Property(e => e.Gate).HasMaxLength(40);
-                entity.Property(e => e.DeviceId).HasMaxLength(120);
+                entity.Property(e => e.Gate).HasMaxLength(40).IsRequired();
+                entity.Property(e => e.DeviceId).HasMaxLength(120).IsRequired();
                 entity.Property(e => e.CheckedByUserId).IsRequired();
                 entity.Property(e => e.Status).HasMaxLength(40).IsRequired();
-                entity.Property(e => e.Note).HasMaxLength(500);
+                entity.Property(e => e.Note).HasMaxLength(500).IsRequired();
                 entity.HasIndex(e => e.CheckinCode).IsUnique();
                 entity.HasOne(e => e.ETicket)
                       .WithMany(t => t.Checkins)
@@ -250,10 +292,10 @@ namespace BaseCore.Repository
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Slug).HasMaxLength(180).IsRequired();
                 entity.Property(e => e.Title).HasMaxLength(220).IsRequired();
-                entity.Property(e => e.Summary).HasMaxLength(1000);
-                entity.Property(e => e.ImageUrl).HasMaxLength(500);
-                entity.Property(e => e.Category).HasMaxLength(80);
-                entity.Property(e => e.Season).HasMaxLength(40);
+                entity.Property(e => e.Summary).HasMaxLength(1000).IsRequired();
+                entity.Property(e => e.ImageUrl).HasMaxLength(500).IsRequired();
+                entity.Property(e => e.Category).HasMaxLength(80).IsRequired();
+                entity.Property(e => e.Season).HasMaxLength(40).IsRequired();
                 entity.HasIndex(e => e.Slug).IsUnique();
             });
 
@@ -327,10 +369,35 @@ namespace BaseCore.Repository
                 new StadiumSection { Id = 5, StadiumId = 1, Code = "S221", Name = "South VIP Box S221", Tier = "vip", Capacity = 24, BasePrice = 8000, MapX = 42, MapY = 94, MapWidth = 7, MapHeight = 6 }
             );
 
+            modelBuilder.Entity<Season>().HasData(
+                new Season
+                {
+                    Id = 1,
+                    Name = "2026-2027",
+                    StartDate = new DateTime(2026, 8, 1),
+                    EndDate = new DateTime(2027, 5, 31),
+                    IsActive = true,
+                    CreatedAt = new DateTime(2026, 1, 1)
+                }
+            );
+
+            modelBuilder.Entity<MatchRound>().HasData(
+                new MatchRound
+                {
+                    Id = 1,
+                    SeasonId = 1,
+                    RoundNumber = 1,
+                    Name = "Vòng 1",
+                    StartDate = new DateTime(2026, 5, 1),
+                    EndDate = new DateTime(2026, 5, 17),
+                    CreatedAt = new DateTime(2026, 1, 1)
+                }
+            );
+
             modelBuilder.Entity<FootballMatch>().HasData(
-                new FootballMatch { Id = 1, Slug = "man-utd-liverpool", Competition = "Premier League", HomeTeamId = 1, AwayTeamId = 2, StadiumId = 1, KickoffTime = new DateTime(2026, 5, 3, 15, 30, 0), Status = "Scheduled", IsFeatured = true },
-                new FootballMatch { Id = 2, Slug = "arsenal-chelsea", Competition = "Premier League", HomeTeamId = 3, AwayTeamId = 4, StadiumId = 2, KickoffTime = new DateTime(2026, 5, 10, 18, 0, 0), Status = "Scheduled", IsFeatured = true },
-                new FootballMatch { Id = 3, Slug = "man-city-tottenham", Competition = "Premier League", HomeTeamId = 5, AwayTeamId = 6, StadiumId = 3, KickoffTime = new DateTime(2026, 5, 17, 16, 30, 0), Status = "Scheduled", IsFeatured = true }
+                new FootballMatch { Id = 1, Slug = "man-utd-liverpool", Competition = "Premier League", HomeTeamId = 1, AwayTeamId = 2, StadiumId = 1, SeasonId = 1, RoundId = 1, KickoffTime = new DateTime(2026, 5, 3, 15, 30, 0), Status = "Scheduled", IsFeatured = true },
+                new FootballMatch { Id = 2, Slug = "arsenal-chelsea", Competition = "Premier League", HomeTeamId = 3, AwayTeamId = 4, StadiumId = 2, SeasonId = 1, RoundId = 1, KickoffTime = new DateTime(2026, 5, 10, 18, 0, 0), Status = "Scheduled", IsFeatured = true },
+                new FootballMatch { Id = 3, Slug = "man-city-tottenham", Competition = "Premier League", HomeTeamId = 5, AwayTeamId = 6, StadiumId = 3, SeasonId = 1, RoundId = 1, KickoffTime = new DateTime(2026, 5, 17, 16, 30, 0), Status = "Scheduled", IsFeatured = true }
             );
 
             modelBuilder.Entity<TicketListing>().HasData(

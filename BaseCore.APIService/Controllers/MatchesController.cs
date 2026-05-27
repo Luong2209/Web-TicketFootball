@@ -16,18 +16,46 @@ namespace BaseCore.APIService.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] bool featuredOnly = false)
+        public async Task<IActionResult> GetAll(
+            [FromQuery] bool featuredOnly = false,
+            [FromQuery] string? season = null,
+            [FromQuery] int? seasonId = null,
+            [FromQuery] int? round = null,
+            [FromQuery] int? roundId = null)
         {
             var query = _dbContext.Matches
                 .Include(match => match.HomeTeam)
                 .Include(match => match.AwayTeam)
                 .Include(match => match.Stadium)
+                .Include(match => match.Season)
+                .Include(match => match.Round)
                 .AsNoTracking()
                 .AsQueryable();
 
             if (featuredOnly)
             {
                 query = query.Where(match => match.IsFeatured);
+            }
+
+            if (seasonId.HasValue)
+            {
+                query = query.Where(match => match.SeasonId == seasonId.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(season))
+            {
+                var normalizedSeason = season.Trim();
+                query = query.Where(match => match.Season.Name == normalizedSeason);
+            }
+
+            if (roundId.HasValue)
+            {
+                query = query.Where(match => match.RoundId == roundId.Value);
+            }
+
+            if (round.HasValue)
+            {
+                query = query.Where(match => match.Round.RoundNumber == round.Value);
             }
 
             var matches = await query
@@ -37,6 +65,11 @@ namespace BaseCore.APIService.Controllers
                     match.Id,
                     match.Slug,
                     match.Competition,
+                    match.SeasonId,
+                    Season = match.Season.Name,
+                    match.RoundId,
+                    RoundNumber = match.Round.RoundNumber,
+                    RoundName = match.Round.Name,
                     match.KickoffTime,
                     match.Status,
                     match.IsFeatured,
@@ -49,6 +82,45 @@ namespace BaseCore.APIService.Controllers
             return Ok(matches);
         }
 
+        [HttpGet("rounds")]
+        public async Task<IActionResult> GetRounds([FromQuery] string? season = null, [FromQuery] int? seasonId = null)
+        {
+            var query = _dbContext.MatchRounds
+                .Include(round => round.Season)
+                .Include(round => round.Matches)
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (seasonId.HasValue)
+            {
+                query = query.Where(round => round.SeasonId == seasonId.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(season))
+            {
+                var normalizedSeason = season.Trim();
+                query = query.Where(round => round.Season.Name == normalizedSeason);
+            }
+
+            var rounds = await query
+                .OrderBy(round => round.Season.Name)
+                .ThenBy(round => round.RoundNumber)
+                .Select(round => new
+                {
+                    round.Id,
+                    round.SeasonId,
+                    Season = round.Season.Name,
+                    round.RoundNumber,
+                    round.Name,
+                    round.StartDate,
+                    round.EndDate,
+                    MatchCount = round.Matches.Count
+                })
+                .ToListAsync();
+
+            return Ok(rounds);
+        }
+
         [HttpGet("{slug}")]
         public async Task<IActionResult> GetBySlug(string slug)
         {
@@ -56,6 +128,8 @@ namespace BaseCore.APIService.Controllers
                 .Include(item => item.HomeTeam)
                 .Include(item => item.AwayTeam)
                 .Include(item => item.Stadium)
+                .Include(item => item.Season)
+                .Include(item => item.Round)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(item => item.Slug == slug);
 
@@ -69,6 +143,11 @@ namespace BaseCore.APIService.Controllers
                 match.Id,
                 match.Slug,
                 match.Competition,
+                match.SeasonId,
+                Season = match.Season.Name,
+                match.RoundId,
+                RoundNumber = match.Round.RoundNumber,
+                RoundName = match.Round.Name,
                 match.KickoffTime,
                 match.Status,
                 HomeTeam = new { match.HomeTeam.Id, match.HomeTeam.Name, match.HomeTeam.LogoUrl },

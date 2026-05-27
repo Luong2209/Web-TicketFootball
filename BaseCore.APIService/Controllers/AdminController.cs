@@ -25,6 +25,8 @@ namespace BaseCore.APIService.Controllers
                 .Include(item => item.HomeTeam)
                 .Include(item => item.AwayTeam)
                 .Include(item => item.Stadium)
+                .Include(item => item.Season)
+                .Include(item => item.Round)
                 .AsNoTracking()
                 .OrderByDescending(item => item.KickoffTime)
                 .Select(item => new
@@ -35,6 +37,11 @@ namespace BaseCore.APIService.Controllers
                     item.HomeTeamId,
                     item.AwayTeamId,
                     item.StadiumId,
+                    item.SeasonId,
+                    Season = item.Season.Name,
+                    item.RoundId,
+                    RoundNumber = item.Round.RoundNumber,
+                    RoundName = item.Round.Name,
                     item.KickoffTime,
                     item.Status,
                     item.IsFeatured,
@@ -50,7 +57,13 @@ namespace BaseCore.APIService.Controllers
         [HttpPost("matches")]
         public async Task<IActionResult> CreateMatch([FromBody] SaveMatchDto dto)
         {
-            var validation = await ValidateMatchDto(dto);
+            var resolved = await ResolveMatchSeasonRound(dto);
+            if (resolved.Result != null)
+            {
+                return resolved.Result;
+            }
+
+            var validation = await ValidateMatchDto(dto, resolved.SeasonId, resolved.RoundId);
             if (validation != null)
             {
                 return validation;
@@ -63,6 +76,8 @@ namespace BaseCore.APIService.Controllers
                 HomeTeamId = dto.HomeTeamId,
                 AwayTeamId = dto.AwayTeamId,
                 StadiumId = dto.StadiumId,
+                SeasonId = resolved.SeasonId,
+                RoundId = resolved.RoundId,
                 KickoffTime = dto.KickoffTime,
                 Status = string.IsNullOrWhiteSpace(dto.Status) ? "Scheduled" : dto.Status.Trim(),
                 IsFeatured = dto.IsFeatured
@@ -83,7 +98,13 @@ namespace BaseCore.APIService.Controllers
                 return NotFound(new { message = "Match not found" });
             }
 
-            var validation = await ValidateMatchDto(dto, id);
+            var resolved = await ResolveMatchSeasonRound(dto);
+            if (resolved.Result != null)
+            {
+                return resolved.Result;
+            }
+
+            var validation = await ValidateMatchDto(dto, resolved.SeasonId, resolved.RoundId, id);
             if (validation != null)
             {
                 return validation;
@@ -94,6 +115,8 @@ namespace BaseCore.APIService.Controllers
             match.HomeTeamId = dto.HomeTeamId;
             match.AwayTeamId = dto.AwayTeamId;
             match.StadiumId = dto.StadiumId;
+            match.SeasonId = resolved.SeasonId;
+            match.RoundId = resolved.RoundId;
             match.KickoffTime = dto.KickoffTime;
             match.Status = string.IsNullOrWhiteSpace(dto.Status) ? "Scheduled" : dto.Status.Trim();
             match.IsFeatured = dto.IsFeatured;
@@ -114,6 +137,170 @@ namespace BaseCore.APIService.Controllers
             _dbContext.Matches.Remove(match);
             await _dbContext.SaveChangesAsync();
             return NoContent();
+        }
+
+        [HttpGet("seasons")]
+        public async Task<IActionResult> GetSeasons()
+        {
+            var seasons = await _dbContext.Seasons
+                .Include(item => item.Rounds)
+                .AsNoTracking()
+                .OrderByDescending(item => item.StartDate)
+                .Select(item => new
+                {
+                    item.Id,
+                    item.Name,
+                    item.StartDate,
+                    item.EndDate,
+                    item.IsActive,
+                    item.CreatedAt,
+                    item.UpdatedAt,
+                    RoundCount = item.Rounds.Count
+                })
+                .ToListAsync();
+
+            return Ok(seasons);
+        }
+
+        [HttpPost("seasons")]
+        public async Task<IActionResult> CreateSeason([FromBody] SaveSeasonDto dto)
+        {
+            var validation = await ValidateSeasonDto(dto);
+            if (validation != null)
+            {
+                return validation;
+            }
+
+            var season = new Season
+            {
+                Name = dto.Name.Trim(),
+                StartDate = dto.StartDate,
+                EndDate = dto.EndDate,
+                IsActive = dto.IsActive,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _dbContext.Seasons.Add(season);
+            await _dbContext.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetSeasons), new { id = season.Id }, season);
+        }
+
+        [HttpPut("seasons/{id:int}")]
+        public async Task<IActionResult> UpdateSeason(int id, [FromBody] SaveSeasonDto dto)
+        {
+            var season = await _dbContext.Seasons.FindAsync(id);
+            if (season == null)
+            {
+                return NotFound(new { message = "Season not found" });
+            }
+
+            var validation = await ValidateSeasonDto(dto, id);
+            if (validation != null)
+            {
+                return validation;
+            }
+
+            season.Name = dto.Name.Trim();
+            season.StartDate = dto.StartDate;
+            season.EndDate = dto.EndDate;
+            season.IsActive = dto.IsActive;
+            season.UpdatedAt = DateTime.UtcNow;
+
+            await _dbContext.SaveChangesAsync();
+            return Ok(season);
+        }
+
+        [HttpGet("rounds")]
+        public async Task<IActionResult> GetRounds([FromQuery] int? seasonId = null, [FromQuery] string? season = null)
+        {
+            var query = _dbContext.MatchRounds
+                .Include(item => item.Season)
+                .Include(item => item.Matches)
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (seasonId.HasValue)
+            {
+                query = query.Where(item => item.SeasonId == seasonId.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(season))
+            {
+                var normalizedSeason = season.Trim();
+                query = query.Where(item => item.Season.Name == normalizedSeason);
+            }
+
+            var rounds = await query
+                .OrderBy(item => item.Season.Name)
+                .ThenBy(item => item.RoundNumber)
+                .Select(item => new
+                {
+                    item.Id,
+                    item.SeasonId,
+                    Season = item.Season.Name,
+                    item.RoundNumber,
+                    item.Name,
+                    item.StartDate,
+                    item.EndDate,
+                    item.CreatedAt,
+                    item.UpdatedAt,
+                    MatchCount = item.Matches.Count
+                })
+                .ToListAsync();
+
+            return Ok(rounds);
+        }
+
+        [HttpPost("rounds")]
+        public async Task<IActionResult> CreateRound([FromBody] SaveMatchRoundDto dto)
+        {
+            var validation = await ValidateRoundDto(dto);
+            if (validation != null)
+            {
+                return validation;
+            }
+
+            var round = new MatchRound
+            {
+                SeasonId = dto.SeasonId,
+                RoundNumber = dto.RoundNumber,
+                Name = string.IsNullOrWhiteSpace(dto.Name) ? $"Vòng {dto.RoundNumber}" : dto.Name.Trim(),
+                StartDate = dto.StartDate,
+                EndDate = dto.EndDate,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _dbContext.MatchRounds.Add(round);
+            await _dbContext.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetRounds), new { id = round.Id }, round);
+        }
+
+        [HttpPut("rounds/{id:int}")]
+        public async Task<IActionResult> UpdateRound(int id, [FromBody] SaveMatchRoundDto dto)
+        {
+            var round = await _dbContext.MatchRounds.FindAsync(id);
+            if (round == null)
+            {
+                return NotFound(new { message = "Round not found" });
+            }
+
+            var validation = await ValidateRoundDto(dto, id);
+            if (validation != null)
+            {
+                return validation;
+            }
+
+            round.SeasonId = dto.SeasonId;
+            round.RoundNumber = dto.RoundNumber;
+            round.Name = string.IsNullOrWhiteSpace(dto.Name) ? $"Vòng {dto.RoundNumber}" : dto.Name.Trim();
+            round.StartDate = dto.StartDate;
+            round.EndDate = dto.EndDate;
+            round.UpdatedAt = DateTime.UtcNow;
+
+            await _dbContext.SaveChangesAsync();
+            return Ok(round);
         }
 
         [HttpGet("stadiums")]
@@ -444,7 +631,43 @@ namespace BaseCore.APIService.Controllers
             return Ok(new { order.Id, order.Status });
         }
 
-        private async Task<IActionResult?> ValidateMatchDto(SaveMatchDto dto, int? currentId = null)
+        private async Task<(int SeasonId, int RoundId, IActionResult? Result)> ResolveMatchSeasonRound(SaveMatchDto dto)
+        {
+            var seasonId = dto.SeasonId;
+            var roundId = dto.RoundId;
+
+            if (seasonId <= 0)
+            {
+                seasonId = await _dbContext.Seasons
+                    .Where(item => item.IsActive)
+                    .OrderByDescending(item => item.StartDate)
+                    .Select(item => item.Id)
+                    .FirstOrDefaultAsync();
+            }
+
+            if (seasonId <= 0)
+            {
+                return (0, 0, BadRequest(new { message = "Season is required" }));
+            }
+
+            if (roundId <= 0)
+            {
+                roundId = await _dbContext.MatchRounds
+                    .Where(item => item.SeasonId == seasonId)
+                    .OrderBy(item => item.RoundNumber)
+                    .Select(item => item.Id)
+                    .FirstOrDefaultAsync();
+            }
+
+            if (roundId <= 0)
+            {
+                return (seasonId, 0, BadRequest(new { message = "Round is required" }));
+            }
+
+            return (seasonId, roundId, null);
+        }
+
+        private async Task<IActionResult?> ValidateMatchDto(SaveMatchDto dto, int seasonId, int roundId, int? currentId = null)
         {
             if (string.IsNullOrWhiteSpace(dto.Slug))
             {
@@ -468,12 +691,105 @@ namespace BaseCore.APIService.Controllers
                 return BadRequest(new { message = "Stadium not found" });
             }
 
+            if (!await _dbContext.Seasons.AnyAsync(item => item.Id == seasonId))
+            {
+                return BadRequest(new { message = "Season not found" });
+            }
+
+            var round = await _dbContext.MatchRounds
+                .AsNoTracking()
+                .FirstOrDefaultAsync(item => item.Id == roundId);
+
+            if (round == null)
+            {
+                return BadRequest(new { message = "Round not found" });
+            }
+
+            if (round.SeasonId != seasonId)
+            {
+                return BadRequest(new { message = "Round must belong to selected season" });
+            }
+
             var slugExists = await _dbContext.Matches
                 .AnyAsync(item => item.Slug == dto.Slug.Trim() && (!currentId.HasValue || item.Id != currentId.Value));
 
             if (slugExists)
             {
                 return Conflict(new { message = "Match slug already exists" });
+            }
+
+            var roundMatchCount = await _dbContext.Matches
+                .CountAsync(item => item.RoundId == roundId && (!currentId.HasValue || item.Id != currentId.Value));
+
+            if (roundMatchCount >= 10)
+            {
+                return Conflict(new { message = "Round already has the maximum 10 matches" });
+            }
+
+            var teamAlreadyInRound = await _dbContext.Matches
+                .AnyAsync(item => item.RoundId == roundId
+                    && (!currentId.HasValue || item.Id != currentId.Value)
+                    && (item.HomeTeamId == dto.HomeTeamId
+                        || item.AwayTeamId == dto.HomeTeamId
+                        || item.HomeTeamId == dto.AwayTeamId
+                        || item.AwayTeamId == dto.AwayTeamId));
+
+            if (teamAlreadyInRound)
+            {
+                return Conflict(new { message = "A team can only appear once in the same round" });
+            }
+
+            return null;
+        }
+
+        private async Task<IActionResult?> ValidateSeasonDto(SaveSeasonDto dto, int? currentId = null)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Name))
+            {
+                return BadRequest(new { message = "Season name is required" });
+            }
+
+            if (dto.EndDate <= dto.StartDate)
+            {
+                return BadRequest(new { message = "Season end date must be after start date" });
+            }
+
+            var exists = await _dbContext.Seasons
+                .AnyAsync(item => item.Name == dto.Name.Trim() && (!currentId.HasValue || item.Id != currentId.Value));
+
+            if (exists)
+            {
+                return Conflict(new { message = "Season already exists" });
+            }
+
+            return null;
+        }
+
+        private async Task<IActionResult?> ValidateRoundDto(SaveMatchRoundDto dto, int? currentId = null)
+        {
+            if (dto.SeasonId <= 0 || !await _dbContext.Seasons.AnyAsync(item => item.Id == dto.SeasonId))
+            {
+                return BadRequest(new { message = "Season not found" });
+            }
+
+            if (dto.RoundNumber <= 0)
+            {
+                return BadRequest(new { message = "Round number must be greater than zero" });
+            }
+
+            if (dto.EndDate <= dto.StartDate)
+            {
+                return BadRequest(new { message = "Round end date must be after start date" });
+            }
+
+            var exists = await _dbContext.MatchRounds
+                .AnyAsync(item => item.SeasonId == dto.SeasonId
+                    && item.RoundNumber == dto.RoundNumber
+                    && (!currentId.HasValue || item.Id != currentId.Value));
+
+            if (exists)
+            {
+                return Conflict(new { message = "Round number already exists in this season" });
             }
 
             return null;
@@ -543,9 +859,28 @@ namespace BaseCore.APIService.Controllers
         public int HomeTeamId { get; set; }
         public int AwayTeamId { get; set; }
         public int StadiumId { get; set; }
+        public int SeasonId { get; set; }
+        public int RoundId { get; set; }
         public DateTime KickoffTime { get; set; }
         public string? Status { get; set; }
         public bool IsFeatured { get; set; }
+    }
+
+    public class SaveSeasonDto
+    {
+        public string Name { get; set; } = "";
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+        public bool IsActive { get; set; }
+    }
+
+    public class SaveMatchRoundDto
+    {
+        public int SeasonId { get; set; }
+        public int RoundNumber { get; set; }
+        public string? Name { get; set; }
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
     }
 
     public class SaveStadiumDto
