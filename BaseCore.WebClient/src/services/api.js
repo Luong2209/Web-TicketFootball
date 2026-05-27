@@ -54,6 +54,7 @@ export const matchApi = {
     getAll: (params) => api.get('/matches', { params }),
     getBySlug: (slug) => api.get(`/matches/${slug}`),
     getTickets: (slug) => api.get(`/matches/${slug}/tickets`),
+    getRounds: (params) => api.get('/matches/rounds', { params }),
 };
 
 export const ticketApi = {
@@ -76,8 +77,16 @@ export const checkinApi = {
 export const adminApi = {
     getOrders: (params) => api.get('/admin/orders', { params }),
     getOrder: (id) => api.get(`/admin/orders/${id}`),
-    getMatches: () => api.get('/admin/matches'),
-    getStadiums: () => api.get('/admin/stadiums'),
+    getMatches: (params) => api.get('/admin/matches', { params }),
+    getSeasons: (params) => api.get('/admin/seasons', { params }),
+    getRounds: (params) => api.get('/admin/rounds', { params }),
+    getStadiums: (params) => api.get('/admin/stadiums', { params }),
+    getStadiumSections: (stadiumId) => api.get(`/admin/stadiums/${stadiumId}/sections`),
+    getTickets: (params) => api.get('/admin/tickets', { params }),
+    getPayments: (params) => api.get('/admin/payments', { params }),
+    getETickets: (params) => api.get('/admin/etickets', { params }),
+    getClubs: (params) => api.get('/admin/clubs', { params }),
+    getNews: (params) => api.get('/admin/news', { params }),
 };
 
 export const newsApi = {

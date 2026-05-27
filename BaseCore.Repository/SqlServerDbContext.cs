@@ -347,18 +347,49 @@ namespace BaseCore.Repository
         private void SeedTicketData(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Team>().HasData(
-                new Team { Id = 1, Name = "Manchester United", City = "Manchester", Country = "England", LogoUrl = "/template-football/images/epl-teams/ImageLoGo/Manchester-United-FC-logo.png" },
-                new Team { Id = 2, Name = "Liverpool", City = "Liverpool", Country = "England", LogoUrl = "/template-football/images/epl-teams/ImageLoGo/Liverpool-FC-logo.png" },
-                new Team { Id = 3, Name = "Arsenal", City = "London", Country = "England", LogoUrl = "/template-football/images/epl-teams/ImageLoGo/Arsenal-FC-logo.png" },
-                new Team { Id = 4, Name = "Chelsea", City = "London", Country = "England", LogoUrl = "/template-football/images/epl-teams/ImageLoGo/Chelsea-FC-logo.png" },
-                new Team { Id = 5, Name = "Manchester City", City = "Manchester", Country = "England", LogoUrl = "/template-football/images/epl-teams/ImageLoGo/Manchester-City-FC-logo.png" },
-                new Team { Id = 6, Name = "Tottenham Hotspur", City = "London", Country = "England", LogoUrl = "/template-football/images/epl-teams/ImageLoGo/Tottenham-Hotspur-logo.png" }
+                new Team { Id = 1, Name = "Manchester United", City = "Manchester", Country = "England", LogoUrl = "/template-football/images/epl-teams/ImageLoGo/Manchester-United-FC-logo.png", IsActive = true },
+                new Team { Id = 2, Name = "Liverpool", City = "Liverpool", Country = "England", LogoUrl = "/template-football/images/epl-teams/ImageLoGo/Liverpool-FC-logo.png", IsActive = true },
+                new Team { Id = 3, Name = "Arsenal", City = "London", Country = "England", LogoUrl = "/template-football/images/epl-teams/ImageLoGo/Arsenal-FC-logo.png", IsActive = true },
+                new Team { Id = 4, Name = "Chelsea", City = "London", Country = "England", LogoUrl = "/template-football/images/epl-teams/ImageLoGo/Chelsea-FC-logo.png", IsActive = true },
+                new Team { Id = 5, Name = "Manchester City", City = "Manchester", Country = "England", LogoUrl = "/template-football/images/epl-teams/ImageLoGo/Manchester-City-FC-logo.png", IsActive = true },
+                new Team { Id = 6, Name = "Tottenham Hotspur", City = "London", Country = "England", LogoUrl = "/template-football/images/epl-teams/ImageLoGo/Tottenham-Hotspur-logo.png", IsActive = true },
+                new Team { Id = 7, Name = "AFC Bournemouth", City = "Bournemouth", Country = "England", LogoUrl = "/template-football/images/epl-teams/ImageLoGo/AFC-Bournemouth-logo.png", IsActive = true },
+                new Team { Id = 8, Name = "Aston Villa", City = "Birmingham", Country = "England", LogoUrl = "/template-football/images/epl-teams/ImageLoGo/Aston-Villa-FC-logo.png", IsActive = true },
+                new Team { Id = 9, Name = "Brentford", City = "London", Country = "England", LogoUrl = "/template-football/images/epl-teams/ImageLoGo/Brentford-FC-logo.png", IsActive = true },
+                new Team { Id = 10, Name = "Brighton & Hove Albion", City = "Brighton and Hove", Country = "England", LogoUrl = "/template-football/images/epl-teams/ImageLoGo/Brighton-Hove-Albion-logo.png", IsActive = true },
+                new Team { Id = 11, Name = "Burnley", City = "Burnley", Country = "England", LogoUrl = "/template-football/images/epl-teams/ImageLoGo/Burnley-FC-logo-1.png", IsActive = true },
+                new Team { Id = 12, Name = "Crystal Palace", City = "London", Country = "England", LogoUrl = "/template-football/images/epl-teams/ImageLoGo/Crystal-Palace-FC-logo.png", IsActive = true },
+                new Team { Id = 13, Name = "Everton", City = "Liverpool", Country = "England", LogoUrl = "/template-football/images/epl-teams/ImageLoGo/Everton-FC-logo.png", IsActive = true },
+                new Team { Id = 14, Name = "Fulham", City = "London", Country = "England", LogoUrl = "/template-football/images/epl-teams/ImageLoGo/Fulham-FC-logo.png", IsActive = true },
+                new Team { Id = 15, Name = "Leeds United", City = "Leeds", Country = "England", LogoUrl = "/template-football/images/epl-teams/ImageLoGo/Leeds-United-FC-logo.png", IsActive = true },
+                new Team { Id = 16, Name = "Newcastle United", City = "Newcastle upon Tyne", Country = "England", LogoUrl = "/template-football/images/epl-teams/ImageLoGo/Newcastle-United-logo.png", IsActive = true },
+                new Team { Id = 17, Name = "Nottingham Forest", City = "Nottingham", Country = "England", LogoUrl = "/template-football/images/epl-teams/ImageLoGo/Nottingham-Forest-FC-logo.png", IsActive = true },
+                new Team { Id = 18, Name = "Sunderland", City = "Sunderland", Country = "England", LogoUrl = "/template-football/images/epl-teams/ImageLoGo/Sunderland-logo.png", IsActive = true },
+                new Team { Id = 19, Name = "West Ham United", City = "London", Country = "England", LogoUrl = "/template-football/images/epl-teams/ImageLoGo/West-Ham-United-FC-logo.png", IsActive = true },
+                new Team { Id = 20, Name = "Wolverhampton Wanderers", City = "Wolverhampton", Country = "England", LogoUrl = "/template-football/images/epl-teams/ImageLoGo/Wolverhampton-Wanderers-logo.png", IsActive = true }
             );
 
             modelBuilder.Entity<Stadium>().HasData(
                 new Stadium { Id = 1, Name = "Old Trafford", City = "Manchester", Country = "England", Capacity = 74310, ImageUrl = "/template-football/images/alessio-festa-_ElVbiXREBM-unsplash.jpg" },
                 new Stadium { Id = 2, Name = "Emirates Stadium", City = "London", Country = "England", Capacity = 60704, ImageUrl = "/template-football/images/william-hadley-JytQXLPXpNM-unsplash.jpg" },
-                new Stadium { Id = 3, Name = "Etihad Stadium", City = "Manchester", Country = "England", Capacity = 53400, ImageUrl = "/template-football/images/james-kirkup-LbT_j62t94U-unsplash.jpg" }
+                new Stadium { Id = 3, Name = "Etihad Stadium", City = "Manchester", Country = "England", Capacity = 53400, ImageUrl = "/template-football/images/james-kirkup-LbT_j62t94U-unsplash.jpg" },
+                new Stadium { Id = 4, Name = "Anfield", City = "Liverpool", Country = "England", Capacity = 61276, ImageUrl = "/template-football/images/bg-breadcrumbs-1-1920x726.jpg" },
+                new Stadium { Id = 5, Name = "Stamford Bridge", City = "London", Country = "England", Capacity = 40343, ImageUrl = "/template-football/images/slider-1-slide-1-1920x671.jpg" },
+                new Stadium { Id = 6, Name = "Tottenham Hotspur Stadium", City = "London", Country = "England", Capacity = 62850, ImageUrl = "/template-football/images/slider-1-slide-2-1920x671.jpg" },
+                new Stadium { Id = 7, Name = "Vitality Stadium", City = "Bournemouth", Country = "England", Capacity = 11307, ImageUrl = "/template-football/images/slider-1-slide-3-1920x671.jpg" },
+                new Stadium { Id = 8, Name = "Villa Park", City = "Birmingham", Country = "England", Capacity = 42657, ImageUrl = "/template-football/images/post-slide-1-769x397.jpg" },
+                new Stadium { Id = 9, Name = "Gtech Community Stadium", City = "London", Country = "England", Capacity = 17250, ImageUrl = "/template-football/images/post-slide-2-769x397.jpg" },
+                new Stadium { Id = 10, Name = "American Express Stadium", City = "Brighton and Hove", Country = "England", Capacity = 31800, ImageUrl = "/template-football/images/post-slide-3-769x397.jpg" },
+                new Stadium { Id = 11, Name = "Turf Moor", City = "Burnley", Country = "England", Capacity = 21944, ImageUrl = "/template-football/images/gallery-soccer-1-original.jpg" },
+                new Stadium { Id = 12, Name = "Selhurst Park", City = "London", Country = "England", Capacity = 25486, ImageUrl = "/template-football/images/gallery-soccer-2-original.jpg" },
+                new Stadium { Id = 13, Name = "Hill Dickinson Stadium", City = "Liverpool", Country = "England", Capacity = 52888, ImageUrl = "/template-football/images/gallery-soccer-3-original.jpg" },
+                new Stadium { Id = 14, Name = "Craven Cottage", City = "London", Country = "England", Capacity = 25700, ImageUrl = "/template-football/images/gallery-soccer-4-original.jpg" },
+                new Stadium { Id = 15, Name = "Elland Road", City = "Leeds", Country = "England", Capacity = 37890, ImageUrl = "/template-football/images/gallery-soccer-5-original.jpg" },
+                new Stadium { Id = 16, Name = "St James' Park", City = "Newcastle upon Tyne", Country = "England", Capacity = 52305, ImageUrl = "/template-football/images/gallery-soccer-6-original.jpg" },
+                new Stadium { Id = 17, Name = "The City Ground", City = "Nottingham", Country = "England", Capacity = 30445, ImageUrl = "/template-football/images/who-s-denilo-SuBb_SiEEM8-unsplash.jpg" },
+                new Stadium { Id = 18, Name = "Stadium of Light", City = "Sunderland", Country = "England", Capacity = 48707, ImageUrl = "/template-football/images/mario-klassen-70YxSTWa2Zw-unsplash.jpg" },
+                new Stadium { Id = 19, Name = "London Stadium", City = "London", Country = "England", Capacity = 62500, ImageUrl = "/template-football/images/banner-free-01.jpg" },
+                new Stadium { Id = 20, Name = "Molineux Stadium", City = "Wolverhampton", Country = "England", Capacity = 31750, ImageUrl = "/template-football/images/banner-free-02.jpg" }
             );
 
             modelBuilder.Entity<StadiumSection>().HasData(

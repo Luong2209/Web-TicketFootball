@@ -18,3 +18,15 @@
     font: inherit;
   }
 }
+
+@layer components {
+  .admin-content {
+    min-height: calc(100vh - 57px);
+  }
+
+  @media (min-width: 992px) {
+    .admin-content {
+      margin-left: 280px;
+    }
+  }
+}

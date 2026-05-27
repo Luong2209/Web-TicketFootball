@@ -1,4 +1,5 @@
 import React from 'react';
+import { Minus, Plus, Ticket } from 'lucide-react';
 
 const currency = new Intl.NumberFormat('de-DE', {
     style: 'currency',
@@ -44,18 +45,18 @@ function StadiumMap({
         <div className="relative grid min-h-0 flex-1 place-items-center overflow-hidden px-3 py-4 sm:px-6 lg:px-7 lg:py-5" onWheel={handleMapWheel}>
             <div className="absolute right-3 top-3 z-[8] inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/95 p-1 shadow-[0_8px_22px_rgba(15,23,42,0.12)] lg:right-5 lg:top-4" aria-label="Điều khiển thu phóng bản đồ sân">
                 <button className="grid h-8 w-8 place-items-center rounded-full border-0 bg-slate-100 text-slate-800 hover:bg-plum-950 hover:text-white" type="button" onClick={() => changeMapZoom(mapZoom - 0.12)} aria-label="Thu nhỏ bản đồ">
-                    <i className="fas fa-minus" aria-hidden="true" />
+                    <Minus className="h-4 w-4" aria-hidden="true" />
                 </button>
                 <span className="min-w-10 text-center text-xs font-black text-plum-950">{Math.round(mapZoom * 100)}%</span>
                 <button className="grid h-8 w-8 place-items-center rounded-full border-0 bg-slate-100 text-slate-800 hover:bg-plum-950 hover:text-white" type="button" onClick={() => changeMapZoom(mapZoom + 0.12)} aria-label="Phóng to bản đồ">
-                    <i className="fas fa-plus" aria-hidden="true" />
+                    <Plus className="h-4 w-4" aria-hidden="true" />
                 </button>
             </div>
 
             <div className="absolute left-3 top-14 z-[8] flex max-w-[calc(100%-1.5rem)] flex-wrap gap-1.5 sm:top-3 sm:max-w-[min(520px,calc(100%-180px))] lg:left-5 lg:top-4" aria-label="Phân hạng chỗ ngồi">
                 {seatTiers.map((tier) => (
                     <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/95 px-2 py-1 text-[11px] font-extrabold text-slate-700 shadow-[0_6px_16px_rgba(15,23,42,0.1)] sm:px-2.5 sm:py-1.5 sm:text-xs" key={tier.key}>
-                        <i className={`h-2.5 w-2.5 rounded-full ${tier.dotClass}`} aria-hidden="true" />
+                        <span className={`h-2.5 w-2.5 rounded-full ${tier.dotClass}`} aria-hidden="true" />
                         {tier.label}
                     </span>
                 ))}
@@ -100,7 +101,7 @@ function StadiumMap({
                         <span className="stand stand--left">Stretford End</span>
                         <span className="stand stand--right">East Stand</span>
                         <span className="stand stand--bottom">Sir Bobby Charlton Stand</span>
-                        <div className="pitch-ticket-icon"><i className="fas fa-ticket-alt" aria-hidden="true" /></div>
+                        <div className="pitch-ticket-icon"><Ticket className="h-5 w-5" aria-hidden="true" /></div>
                         <div className="center-circle" />
                         <div className="half-line" />
                         <div className="box box--left" />

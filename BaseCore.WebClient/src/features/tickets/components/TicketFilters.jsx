@@ -1,4 +1,5 @@
 import React from 'react';
+import { RotateCcw, SlidersHorizontal } from 'lucide-react';
 import { currency } from '../utils/formatters';
 
 function TicketFilters({
@@ -12,8 +13,8 @@ function TicketFilters({
 }) {
     return (
         <div className="flex min-h-[58px] items-center gap-2 overflow-x-auto border-b border-slate-200 bg-white p-3">
-            <button type="button" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white text-slate-700 shadow-[0_5px_14px_rgba(15,23,42,0.12)]"><i className="fas fa-sync-alt" /></button>
-            <button type="button" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white text-slate-700 shadow-[0_5px_14px_rgba(15,23,42,0.12)]"><i className="fas fa-sliders-h" /></button>
+            <button type="button" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white text-slate-700 shadow-[0_5px_14px_rgba(15,23,42,0.12)]"><RotateCcw className="h-4 w-4" aria-hidden="true" /></button>
+            <button type="button" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white text-slate-700 shadow-[0_5px_14px_rgba(15,23,42,0.12)]"><SlidersHorizontal className="h-4 w-4" aria-hidden="true" /></button>
             <label className="inline-flex h-11 shrink-0 items-center rounded-full bg-pink-50 px-4 font-semibold text-plum-950 shadow-[inset_0_0_0_1px_#f0c9e8,0_5px_14px_rgba(15,23,42,0.1)]">
                 <select className="border-0 bg-transparent outline-none" value={ticketCount} onChange={(event) => onTicketCountChange(Number(event.target.value))}>
                     <option value={1}>1 vé</option>

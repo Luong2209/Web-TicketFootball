@@ -1,4 +1,5 @@
 import React from 'react';
+import { ArrowUpDown, Heart, Info, Ticket } from 'lucide-react';
 import TicketCard from './TicketCard';
 
 function TicketResultsPanel({
@@ -17,8 +18,8 @@ function TicketResultsPanel({
         <aside className="order-2 min-w-0 overflow-visible bg-white lg:order-1 lg:overflow-y-auto lg:border-r lg:border-slate-200">
             <div className="relative px-5 py-6">
                 <div className="absolute right-5 top-4 flex gap-3">
-                    <button className="grid h-9 w-9 place-items-center rounded-full bg-white text-slate-700 shadow-[0_6px_16px_rgba(15,23,42,0.12)] hover:text-plum-950" type="button" aria-label="Save event"><i className="far fa-heart" /></button>
-                    <button className="grid h-9 w-9 place-items-center rounded-full bg-white text-slate-700 shadow-[0_6px_16px_rgba(15,23,42,0.12)] hover:text-plum-950" type="button" aria-label="Event info"><i className="fas fa-info-circle" /></button>
+                    <button className="grid h-9 w-9 place-items-center rounded-full bg-white text-slate-700 shadow-[0_6px_16px_rgba(15,23,42,0.12)] hover:text-plum-950" type="button" aria-label="Save event"><Heart className="h-4 w-4" aria-hidden="true" /></button>
+                    <button className="grid h-9 w-9 place-items-center rounded-full bg-white text-slate-700 shadow-[0_6px_16px_rgba(15,23,42,0.12)] hover:text-plum-950" type="button" aria-label="Event info"><Info className="h-4 w-4" aria-hidden="true" /></button>
                 </div>
                 <h1 className="mb-2 max-w-[520px] pr-24 text-[21px] font-extrabold leading-tight">{matchData.title}</h1>
                 <p className="m-0 max-w-[540px] text-[15px] leading-6 text-slate-600">{matchData.date} · {matchData.stadium} · {matchData.location}</p>
@@ -28,7 +29,7 @@ function TicketResultsPanel({
             <div className="flex items-center justify-between gap-4 border-b border-slate-100 px-5 pb-4">
                 <strong className="text-xl font-extrabold">{visibleTickets.length || matchData.listings} vé đang bán</strong>
                 <label className="inline-flex items-center gap-2 text-sm font-semibold text-slate-700">
-                    <i className="fas fa-sort" aria-hidden="true" />
+                    <ArrowUpDown className="h-4 w-4" aria-hidden="true" />
                     <select className="border-0 bg-transparent outline-none" value={sortMode} onChange={(event) => onSortChange(event.target.value)}>
                         <option value="price">Giá thấp trước</option>
                         <option value="price-desc">Giá cao trước</option>
@@ -41,7 +42,9 @@ function TicketResultsPanel({
                     <strong className="block font-extrabold">Vé đã xác thực</strong>
                     <span className="mt-1 block text-sm text-slate-700">Mỗi vé được kiểm tra và giữ chỗ trước khi tạo đơn.</span>
                 </div>
-                <i className="fas fa-ticket-alt grid h-10 w-10 place-items-center rounded-full bg-blue-100 text-blue-700" aria-hidden="true" />
+                <span className="grid h-10 w-10 place-items-center rounded-full bg-blue-100 text-blue-700" aria-hidden="true">
+                    <Ticket className="h-5 w-5" />
+                </span>
             </section>
 
             {selectedSectionData && (

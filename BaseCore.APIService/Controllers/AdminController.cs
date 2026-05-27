@@ -252,6 +252,26 @@ namespace BaseCore.APIService.Controllers
             return Ok(rounds);
         }
 
+        [HttpGet("clubs")]
+        public async Task<IActionResult> GetClubs()
+        {
+            var clubs = await _dbContext.Teams
+                .AsNoTracking()
+                .OrderBy(item => item.Name)
+                .Select(item => new
+                {
+                    item.Id,
+                    item.Name,
+                    item.City,
+                    item.Country,
+                    item.LogoUrl,
+                    item.IsActive
+                })
+                .ToListAsync();
+
+            return Ok(clubs);
+        }
+
         [HttpPost("rounds")]
         public async Task<IActionResult> CreateRound([FromBody] SaveMatchRoundDto dto)
         {

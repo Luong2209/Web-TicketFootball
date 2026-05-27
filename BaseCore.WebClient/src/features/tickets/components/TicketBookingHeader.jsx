@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Search } from 'lucide-react';
 import { ticketAsset } from '../utils/formatters';
 
 function TicketBookingHeader() {
@@ -17,7 +18,7 @@ function TicketBookingHeader() {
                     <Link className="text-sm font-extrabold uppercase text-slate-800 no-underline hover:text-plum-950" to="/news">Tin tức</Link>
                 </nav>
                 <form className="flex h-10 w-full items-center gap-3 rounded border border-slate-300 bg-slate-50 px-4 lg:justify-self-end" onSubmit={(event) => event.preventDefault()}>
-                    <i className="fas fa-search text-slate-500" aria-hidden="true" />
+                    <Search className="h-4 w-4 text-slate-500" aria-hidden="true" />
                     <input className="w-full border-0 bg-transparent text-[15px] outline-none" type="search" placeholder="Tìm trận đấu, đội bóng, sân vận động..." />
                 </form>
             </div>

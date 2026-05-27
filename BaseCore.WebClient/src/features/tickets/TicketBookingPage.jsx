@@ -1,23 +1,28 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { ArrowLeft } from 'lucide-react';
+import UserLayout from '../../components/user/UserLayout';
+import { EmptyState, ErrorState, LoadingState, StatusBadge } from '../../components/user/StateViews';
+import { PageFade, fadeUp, itemTransition, pageTransition, stagger } from '../../components/user/UserMotion';
 import { useAuth } from '../../contexts/AuthContext';
 import { matchApi, ticketApi } from '../../services/api';
-import BookingStatus from './components/BookingStatus';
-import StadiumMap from './components/StadiumMap';
-import TicketBookingHeader from './components/TicketBookingHeader';
-import TicketFilters from './components/TicketFilters';
-import TicketResultsPanel from './components/TicketResultsPanel';
-import './TicketBooking.css';
 
 const ticketTypeLabels = {
-    standard: 'Tieu chuan',
-    best: 'Cho ngoi dep',
-    away: 'Khu khach',
+    standard: 'Tiêu chuẩn',
+    best: 'Chỗ ngồi đẹp',
+    away: 'Khu khách',
     vip: 'VIP',
 };
 
+const formatCurrency = (value) => new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    maximumFractionDigits: 0,
+}).format(Number(value || 0));
+
 const formatKickoff = (value) => {
-    if (!value) return '';
+    if (!value) return 'Đang cập nhật';
     return new Intl.DateTimeFormat('vi-VN', {
         weekday: 'short',
         day: '2-digit',
@@ -28,47 +33,53 @@ const formatKickoff = (value) => {
     }).format(new Date(value));
 };
 
-const mapSection = (section) => ({
-    id: section.code,
-    dbId: section.id,
-    name: section.name,
-    x: Number(section.mapX),
-    y: Number(section.mapY),
-    w: Number(section.mapWidth),
-    h: Number(section.mapHeight),
-    price: Number(section.basePrice),
-    type: section.tier,
+const normalizeListing = (listing) => ({
+    id: listing.id,
+    title: listing.title || listing.section?.name || 'Ticket listing',
+    sectionName: listing.section?.name || listing.sectionName || listing.section?.code || 'Khu ghế',
+    sectionCode: listing.section?.code || listing.sectionCode || '',
+    rowLabel: listing.rowLabel || listing.row || '',
+    availableQuantity: Number(listing.availableQuantity ?? listing.available ?? 0),
+    unitPrice: Number(listing.unitPrice ?? listing.price ?? 0),
+    ticketType: listing.ticketType || 'standard',
+    deliveryMethod: listing.deliveryMethod || 'E-ticket',
+    sellerName: listing.sellerName || 'Premier League Tickets',
+    isVerified: !!listing.isVerified,
 });
 
-const mapListing = (listing) => ({
-    id: listing.id,
-    sectionId: listing.section.code,
-    title: listing.title,
-    row: listing.rowLabel,
-    quantity: listing.availableQuantity,
-    price: Number(listing.unitPrice),
-    score: listing.isVerified ? 'Da xac thuc' : 'Dang kiem tra',
-    tags: [listing.deliveryMethod, ticketTypeLabels[listing.ticketType] || listing.ticketType].filter(Boolean),
-    seller: listing.sellerName,
-    type: listing.ticketType,
-});
+const TeamBlock = ({ team, align = 'left' }) => {
+    const name = team?.name || 'Team';
+
+    return (
+        <div className={`flex items-center gap-4 ${align === 'right' ? 'justify-end text-right' : ''}`}>
+            {align !== 'right' && (
+                team?.logoUrl
+                    ? <img className="h-16 w-16 object-contain" src={team.logoUrl} alt={name} />
+                    : <div className="grid h-16 w-16 place-items-center rounded-full bg-violet-100 text-xl font-black text-violet-700">{name.charAt(0)}</div>
+            )}
+            <div>
+                <p className="mb-1 text-sm font-bold text-slate-500">{align === 'right' ? 'Đội khách' : 'Đội nhà'}</p>
+                <h2 className="mb-0 text-xl font-black text-slate-950">{name}</h2>
+            </div>
+            {align === 'right' && (
+                team?.logoUrl
+                    ? <img className="h-16 w-16 object-contain" src={team.logoUrl} alt={name} />
+                    : <div className="grid h-16 w-16 place-items-center rounded-full bg-violet-100 text-xl font-black text-violet-700">{name.charAt(0)}</div>
+            )}
+        </div>
+    );
+};
 
 function TicketBookingPage() {
     const { matchSlug } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
-    const [matchData, setMatchData] = useState(null);
-    const [stadiumSections, setStadiumSections] = useState([]);
+    const [match, setMatch] = useState(null);
     const [ticketListings, setTicketListings] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState('');
-    const [selectedSection, setSelectedSection] = useState(null);
-    const [ticketCount, setTicketCount] = useState(1);
-    const [maxPrice, setMaxPrice] = useState(0);
-    const [activeFilter, setActiveFilter] = useState('');
-    const [sortMode, setSortMode] = useState('price');
-    const [mapZoom, setMapZoom] = useState(1);
-    const [bookingId, setBookingId] = useState(null);
+    const [selectedTicketId, setSelectedTicketId] = useState(null);
+    const [quantity, setQuantity] = useState(1);
     const [bookingError, setBookingError] = useState('');
     const [isBooking, setIsBooking] = useState(false);
 
@@ -87,26 +98,15 @@ function TicketBookingPage() {
 
                 if (!isMounted) return;
 
-                const match = matchResponse.data;
-                const sections = ticketsResponse.data.sections.map(mapSection);
-                const listings = ticketsResponse.data.listings.map(mapListing);
-                const highestPrice = listings.reduce((current, ticket) => Math.max(current, ticket.price), 0);
+                const listings = Array.isArray(ticketsResponse.data)
+                    ? ticketsResponse.data
+                    : ticketsResponse.data?.listings || [];
 
-                setMatchData({
-                    id: match.slug,
-                    title: `${match.homeTeam.name} vs ${match.awayTeam.name}`,
-                    date: formatKickoff(match.kickoffTime),
-                    stadium: match.stadium.name,
-                    location: `${match.stadium.city}, ${match.stadium.country}`,
-                    listings: listings.length,
-                });
-                setStadiumSections(sections);
-                setTicketListings(listings);
-                setMaxPrice(highestPrice || 8000);
-                setSelectedSection(null);
+                setMatch(matchResponse.data);
+                setTicketListings(listings.map(normalizeListing));
             } catch (error) {
                 if (isMounted) {
-                    setLoadError(error.response?.data?.message || 'Khong tai duoc du lieu ve tu backend.');
+                    setLoadError(error.response?.data?.message || 'Không tải được dữ liệu vé từ backend.');
                 }
             } finally {
                 if (isMounted) {
@@ -122,56 +122,38 @@ function TicketBookingPage() {
         };
     }, [matchSlug]);
 
-    const filterOptions = useMemo(() => {
-        const types = [...new Set(ticketListings.map((ticket) => ticket.type).filter(Boolean))];
-        return types.map((type) => ({ label: ticketTypeLabels[type] || type, value: type }));
-    }, [ticketListings]);
+    const selectedTicket = useMemo(
+        () => ticketListings.find((ticket) => ticket.id === selectedTicketId) || null,
+        [selectedTicketId, ticketListings],
+    );
 
-    const selectedSectionData = stadiumSections.find((section) => section.id === selectedSection);
+    const safeQuantity = Math.min(Math.max(Number(quantity) || 1, 1), Math.max(selectedTicket?.availableQuantity || 1, 1));
+    const subtotal = selectedTicket ? selectedTicket.unitPrice * safeQuantity : 0;
 
-    const visibleTickets = useMemo(() => {
-        const filtered = ticketListings.filter((ticket) => (
-            (!selectedSection || ticket.sectionId === selectedSection)
-            && ticket.quantity >= ticketCount
-            && ticket.price <= maxPrice
-            && (!activeFilter || ticket.type === activeFilter)
-        ));
-
-        return [...filtered].sort((a, b) => (sortMode === 'price-desc' ? b.price - a.price : a.price - b.price));
-    }, [activeFilter, maxPrice, selectedSection, sortMode, ticketCount, ticketListings]);
-
-    const resetBookingStatus = () => {
+    const handleSelectTicket = (ticket) => {
+        setSelectedTicketId(ticket.id);
+        setQuantity((current) => Math.min(Math.max(Number(current) || 1, 1), Math.max(ticket.availableQuantity, 1)));
         setBookingError('');
-        setBookingId(null);
     };
 
-    const handleSelectSection = (sectionId) => {
-        setSelectedSection((current) => (current === sectionId ? null : sectionId));
-        resetBookingStatus();
-    };
+    const handleSubmitOrder = async () => {
+        if (!selectedTicket) {
+            setBookingError('Vui lòng chọn một khu vé trước khi tiếp tục.');
+            return;
+        }
 
-    const handleClearSection = () => {
-        setSelectedSection(null);
-        resetBookingStatus();
-    };
-
-    const handleBookTicket = async (ticket) => {
         setIsBooking(true);
-        resetBookingStatus();
+        setBookingError('');
 
         try {
             const response = await ticketApi.createOrder({
-                items: [{ ticketListingId: ticket.id, quantity: ticketCount }],
+                items: [{ ticketListingId: selectedTicket.id, quantity: safeQuantity }],
                 customerName: user?.name || user?.username || '',
                 customerEmail: user?.email || '',
                 customerPhone: user?.phone || '',
-                note: `${matchData.title} - ${ticket.sectionId} - ${ticket.row}`,
+                note: `${match?.homeTeam?.name || ''} vs ${match?.awayTeam?.name || ''} - ${selectedTicket.sectionName} - ${selectedTicket.rowLabel}`,
             });
 
-            setBookingId(response.data?.id || 'pending');
-            setTicketListings((current) => current
-                .map((item) => (item.id === ticket.id ? { ...item, quantity: item.quantity - ticketCount } : item))
-                .filter((item) => item.quantity > 0));
             navigate(`/payments/${response.data.id}`, {
                 state: {
                     orderId: response.data.id,
@@ -180,7 +162,7 @@ function TicketBookingPage() {
                 },
             });
         } catch (error) {
-            setBookingError(error.response?.data?.message || 'Khong tao duoc don dat ve.');
+            setBookingError(error.response?.data?.message || 'Không tạo được đơn đặt vé.');
         } finally {
             setIsBooking(false);
         }
@@ -188,68 +170,179 @@ function TicketBookingPage() {
 
     if (isLoading) {
         return (
-            <div className="grid min-h-screen place-items-center bg-slate-100 text-slate-700">
-                <div className="grid gap-3 text-center">
-                    <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-plum-950" />
-                    <strong>Dang tai du lieu ve...</strong>
-                </div>
-            </div>
+            <UserLayout>
+                <PageFade>
+                    <LoadingState title="Đang tải vé trận đấu..." description="Hệ thống đang lấy khu vé và giá vé mới nhất." />
+                </PageFade>
+            </UserLayout>
         );
     }
 
-    if (loadError || !matchData) {
+    if (loadError || !match) {
         return (
-            <div className="min-h-screen bg-slate-100 text-slate-900">
-                <TicketBookingHeader />
-                <div className="mx-auto mt-10 max-w-xl rounded-lg border border-rose-200 bg-white p-6 text-rose-700 shadow-sm">
-                    <strong>Khong co du lieu tran dau</strong>
-                    <p className="mb-0 mt-2">{loadError || 'Tran dau khong ton tai.'}</p>
-                </div>
-            </div>
+            <UserLayout>
+                <PageFade>
+                    <ErrorState title="Không có dữ liệu trận đấu" message={loadError || 'Trận đấu không tồn tại.'} />
+                </PageFade>
+            </UserLayout>
         );
     }
 
     return (
-        <div className="min-h-screen overflow-x-hidden bg-slate-100 font-sans text-ink-900">
-            <TicketBookingHeader />
+        <UserLayout>
+            <PageFade>
+            <motion.div className="mb-6 flex flex-wrap items-center justify-between gap-3" initial="hidden" animate="show" variants={fadeUp} transition={pageTransition}>
+                <div>
+                    <Link className="text-sm font-black text-violet-700 no-underline transition hover:text-violet-600" to="/user">
+                        <ArrowLeft className="mr-2 inline h-4 w-4" aria-hidden="true" />
+                        Trở về danh sách trận
+                    </Link>
+                    <h1 className="mb-0 mt-3 text-3xl font-black text-slate-950">Chọn vé trận đấu</h1>
+                    <p className="mb-0 mt-2 text-sm font-bold text-slate-500">
+                        {match.roundName || 'Vòng đấu chưa cập nhật'} · Premier League {match.season || '2026-2027'}
+                    </p>
+                </div>
+                <StatusBadge status={match.status || 'Scheduled'} />
+            </motion.div>
 
-            <main className="grid overflow-visible lg:h-[calc(100vh-68px)] lg:grid-cols-[minmax(380px,35%)_minmax(0,65%)] lg:overflow-hidden">
-                <TicketResultsPanel
-                    isBooking={isBooking}
-                    matchData={matchData}
-                    matchSlug={matchSlug}
-                    selectedSectionData={selectedSectionData}
-                    sortMode={sortMode}
-                    visibleTickets={visibleTickets}
-                    onBookTicket={handleBookTicket}
-                    onClearSection={handleClearSection}
-                    onSelectSection={handleSelectSection}
-                    onSortChange={setSortMode}
-                />
+            <motion.section className="mb-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm" initial="hidden" animate="show" variants={fadeUp} transition={{ ...itemTransition, delay: 0.05 }}>
+                <div className="grid gap-6 lg:grid-cols-[1fr_auto_1fr] lg:items-center">
+                    <TeamBlock team={match.homeTeam} />
+                    <div className="grid place-items-center">
+                        <span className="grid h-16 w-16 place-items-center rounded-full bg-slate-950 text-lg font-black text-white shadow-lg shadow-slate-950/20">
+                            VS
+                        </span>
+                    </div>
+                    <TeamBlock team={match.awayTeam} align="right" />
+                </div>
+                <div className="mt-6 grid gap-4 rounded-2xl bg-slate-50 p-5 md:grid-cols-3">
+                    <div>
+                        <p className="mb-1 text-sm font-bold text-slate-500">Kickoff</p>
+                        <strong>{formatKickoff(match.kickoffTime)}</strong>
+                    </div>
+                    <div>
+                        <p className="mb-1 text-sm font-bold text-slate-500">Sân vận động</p>
+                        <strong>{match.stadium?.name || 'Đang cập nhật'}</strong>
+                    </div>
+                    <div>
+                        <p className="mb-1 text-sm font-bold text-slate-500">Địa điểm</p>
+                        <strong>{[match.stadium?.city, match.stadium?.country].filter(Boolean).join(', ') || 'Đang cập nhật'}</strong>
+                    </div>
+                </div>
+            </motion.section>
 
-                <section className="order-1 flex min-h-[560px] min-w-0 flex-col bg-slate-50 lg:order-2">
-                    <TicketFilters
-                        activeFilter={activeFilter}
-                        filterOptions={filterOptions}
-                        maxPrice={maxPrice}
-                        ticketCount={ticketCount}
-                        onActiveFilterChange={setActiveFilter}
-                        onMaxPriceChange={setMaxPrice}
-                        onTicketCountChange={setTicketCount}
-                    />
+            {bookingError && <div className="mb-5"><ErrorState title="Chưa tạo được đơn" message={bookingError} /></div>}
 
-                    <StadiumMap
-                        mapZoom={mapZoom}
-                        sections={stadiumSections}
-                        selectedSection={selectedSection}
-                        onSelectSection={handleSelectSection}
-                        onZoomChange={setMapZoom}
-                    />
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+                <motion.section className="grid gap-4" initial="hidden" animate="show" variants={stagger}>
+                    {ticketListings.length ? ticketListings.map((ticket) => {
+                        const soldOut = ticket.availableQuantity <= 0;
+                        const isSelected = selectedTicketId === ticket.id;
 
-                    <BookingStatus bookingError={bookingError} bookingId={bookingId} />
-                </section>
-            </main>
-        </div>
+                        return (
+                            <motion.article
+                                className={`rounded-2xl border bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${isSelected ? 'border-violet-500 ring-2 ring-violet-100' : 'border-slate-200'}`}
+                                key={ticket.id}
+                                variants={fadeUp}
+                                transition={itemTransition}
+                                whileHover={{ y: -4, scale: 1.01 }}
+                            >
+                                <div className="grid gap-5 md:grid-cols-[1fr_auto] md:items-center">
+                                    <div>
+                                        <div className="mb-3 flex flex-wrap items-center gap-2">
+                                            <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-black text-violet-700">
+                                                {ticketTypeLabels[ticket.ticketType] || ticket.ticketType}
+                                            </span>
+                                            {ticket.isVerified && <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-700">Đã xác thực</span>}
+                                            {soldOut && <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-black text-slate-600">Hết vé</span>}
+                                        </div>
+                                        <h2 className="mb-2 text-xl font-black text-slate-950">{ticket.sectionName}</h2>
+                                        <p className="mb-0 text-sm text-slate-500">
+                                            {ticket.title} {ticket.rowLabel ? `- Hàng ${ticket.rowLabel}` : ''} - {ticket.deliveryMethod}
+                                        </p>
+                                    </div>
+                                    <div className="md:text-right">
+                                        <p className="mb-1 text-sm font-bold text-slate-500">Giá vé</p>
+                                        <strong className="text-2xl font-black text-slate-950">{formatCurrency(ticket.unitPrice)}</strong>
+                                        <p className="mb-0 mt-1 text-sm text-slate-500">Còn {ticket.availableQuantity} vé</p>
+                                    </div>
+                                </div>
+
+                                <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-5">
+                                    <div className="text-sm text-slate-500">
+                                        Người bán: <span className="font-bold text-slate-700">{ticket.sellerName}</span>
+                                    </div>
+                                    <button
+                                        className={`rounded-xl px-5 py-3 text-sm font-black text-white transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50 ${isSelected ? 'bg-violet-700 hover:bg-violet-600' : 'bg-slate-950 hover:bg-violet-700'}`}
+                                        type="button"
+                                        disabled={soldOut}
+                                        onClick={() => handleSelectTicket(ticket)}
+                                    >
+                                        {soldOut ? 'Hết vé' : isSelected ? 'Đã chọn' : 'Chọn vé'}
+                                    </button>
+                                </div>
+                            </motion.article>
+                        );
+                    }) : (
+                        <EmptyState title="Chưa có vé mở bán" message="Trận đấu này hiện chưa có ticket listing khả dụng." />
+                    )}
+                </motion.section>
+
+                <motion.aside className="h-fit rounded-2xl border border-slate-200 bg-white p-5 shadow-lg lg:sticky lg:top-24" initial="hidden" animate="show" variants={fadeUp} transition={{ ...itemTransition, delay: 0.12 }}>
+                    <h2 className="text-xl font-black text-slate-950">Tóm tắt đơn vé</h2>
+                    {selectedTicket ? (
+                        <>
+                            <div className="mt-5 rounded-2xl bg-slate-50 p-4">
+                                <p className="mb-1 text-sm font-bold text-slate-500">Khu vé</p>
+                                <strong className="block text-slate-950">{selectedTicket.sectionName}</strong>
+                                <p className="mb-0 mt-1 text-sm text-slate-500">{selectedTicket.title}</p>
+                            </div>
+
+                            <label className="mt-5 block">
+                                <span className="mb-2 block text-sm font-bold text-slate-600">Số lượng</span>
+                                <input
+                                    className="w-full rounded-xl border border-slate-300 px-4 py-3 font-bold outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
+                                    min="1"
+                                    max={selectedTicket.availableQuantity}
+                                    type="number"
+                                    value={safeQuantity}
+                                    onChange={(event) => setQuantity(event.target.value)}
+                                />
+                            </label>
+
+                            <div className="mt-5 space-y-3 border-t border-slate-100 pt-5 text-sm">
+                                <div className="flex justify-between">
+                                    <span className="text-slate-500">Đơn giá</span>
+                                    <strong>{formatCurrency(selectedTicket.unitPrice)}</strong>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-slate-500">Số lượng</span>
+                                    <strong>{safeQuantity}</strong>
+                                </div>
+                                <div className="flex justify-between text-lg">
+                                    <span className="font-black text-slate-950">Tạm tính</span>
+                                    <strong className="text-violet-700">{formatCurrency(subtotal)}</strong>
+                                </div>
+                            </div>
+
+                            <button
+                                className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-emerald-500 px-5 py-3 font-black text-white shadow-lg shadow-emerald-500/20 transition-all duration-300 hover:bg-emerald-400 disabled:cursor-wait disabled:opacity-60"
+                                type="button"
+                                disabled={isBooking}
+                                onClick={handleSubmitOrder}
+                            >
+                                {isBooking ? 'Đang tạo đơn...' : 'Tiếp tục thanh toán'}
+                            </button>
+                        </>
+                    ) : (
+                        <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-500">
+                            Chọn một khu vé ở danh sách bên trái để xem tạm tính và tiếp tục thanh toán.
+                        </div>
+                    )}
+                </motion.aside>
+            </div>
+            </PageFade>
+        </UserLayout>
     );
 }
 
