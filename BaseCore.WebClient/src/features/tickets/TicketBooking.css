@@ -1,0 +1,429 @@
+@import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap");
+
+.ticket-mini-map {
+    border: 1px solid #e2e6eb;
+    border-radius: 6px;
+    background:
+        linear-gradient(#eef0f3, #eef0f3) center / 70px 78px no-repeat,
+        radial-gradient(ellipse at center, transparent 36%, #dde2e8 37% 47%, transparent 48%);
+}
+
+.ticket-mini-map span {
+    display: block;
+    width: 48px;
+    height: 36px;
+    margin: 34px auto 0;
+    border: 2px solid #ff4b36;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #329a56 50%, #278848 50%);
+    background-size: 12px 100%;
+}
+
+.stadium-map {
+    width: min(1220px, 100%);
+    max-height: calc(100vh - 150px);
+    aspect-ratio: 1.82 / 1;
+    position: relative;
+    transform-origin: center center;
+    transition: transform 160ms ease;
+    will-change: transform;
+}
+
+.stadium-bowl {
+    position: absolute;
+    inset: 2.5% 1.5%;
+    overflow: visible;
+    border: 1px solid #aeb4bd;
+    border-radius: 50% / 43%;
+    background:
+        radial-gradient(ellipse at center, transparent 0 34%, rgba(231, 233, 237, 0.92) 35% 51%, transparent 52%),
+        linear-gradient(#f8f9fb, #eceef2);
+    box-shadow: inset 0 0 0 2px #f8fafc;
+}
+
+.stadium-ring {
+    position: absolute;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.stadium-ring--outer {
+    inset: -4% -2.5%;
+    border: 1px solid #b6bbc4;
+    border-radius: 50% / 44%;
+}
+
+.stadium-ring--middle {
+    inset: 5% 6.5%;
+    border: 1px solid #c0c5cd;
+    border-radius: 49% / 42%;
+}
+
+.stadium-ring--inner {
+    inset: 14% 16%;
+    border: 1px solid #c9cdd4;
+    border-radius: 48% / 38%;
+}
+
+.stadium-bowl::before,
+.stadium-bowl::after {
+    content: "";
+    position: absolute;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.stadium-bowl::before {
+    left: 3%;
+    top: 5%;
+    width: 22%;
+    height: 88%;
+    border: 1px solid #c3c8d0;
+    border-right: 0;
+    border-radius: 68% 0 0 68% / 50% 0 0 50%;
+    transform: rotate(-7deg);
+}
+
+.stadium-bowl::after {
+    right: 3%;
+    top: 5%;
+    width: 22%;
+    height: 88%;
+    border: 1px solid #c3c8d0;
+    border-left: 0;
+    border-radius: 0 68% 68% 0 / 0 50% 50% 0;
+    transform: rotate(7deg);
+}
+
+.stadium-section {
+    position: absolute;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    border: 1px solid #c1c6cd;
+    border-radius: 2px;
+    background:
+        linear-gradient(90deg, rgba(255,255,255,0.42) 1px, transparent 1px) 0 0 / 15px 100%,
+        linear-gradient(180deg, rgba(255,255,255,0.22), rgba(0,0,0,0.02)),
+        #e3e4e8;
+    color: #5f6670;
+    font-size: 11px;
+    line-height: 1;
+    cursor: pointer;
+    overflow: visible;
+    transition: background 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+.stadium-section--tier-standard {
+    background:
+        linear-gradient(90deg, rgba(255,255,255,0.42) 1px, transparent 1px) 0 0 / 15px 100%,
+        #e3e4e8;
+}
+
+.stadium-section--tier-best {
+    background:
+        linear-gradient(90deg, rgba(255,255,255,0.42) 1px, transparent 1px) 0 0 / 15px 100%,
+        #e1e5e1;
+}
+
+.stadium-section--tier-premium {
+    background:
+        linear-gradient(90deg, rgba(255,255,255,0.42) 1px, transparent 1px) 0 0 / 15px 100%,
+        #dde4df;
+}
+
+.stadium-section--tier-vip {
+    background:
+        linear-gradient(90deg, rgba(255,255,255,0.42) 1px, transparent 1px) 0 0 / 15px 100%,
+        #e8e1d7;
+}
+
+.stadium-section--tier-away {
+    background:
+        linear-gradient(90deg, rgba(255,255,255,0.42) 1px, transparent 1px) 0 0 / 15px 100%,
+        #dfe4ef;
+}
+
+.stadium-section:hover,
+.stadium-section:focus-visible {
+    z-index: 7;
+    color: #1f2937;
+    border-color: #43003f;
+    box-shadow: 0 14px 26px rgba(67, 0, 63, 0.18);
+    transform: translateY(-2px);
+}
+
+.stadium-section--tier-standard:hover,
+.stadium-section--tier-standard:focus-visible {
+    background:
+        linear-gradient(90deg, rgba(255,255,255,0.22) 1px, transparent 1px) 0 0 / 18px 100%,
+        #c7ccd5;
+}
+
+.stadium-section--tier-best:hover,
+.stadium-section--tier-best:focus-visible {
+    background:
+        linear-gradient(90deg, rgba(255,255,255,0.24) 1px, transparent 1px) 0 0 / 18px 100%,
+        #8fd19a;
+}
+
+.stadium-section--tier-premium:hover,
+.stadium-section--tier-premium:focus-visible {
+    background:
+        linear-gradient(90deg, rgba(255,255,255,0.24) 1px, transparent 1px) 0 0 / 18px 100%,
+        #4aa66a;
+}
+
+.stadium-section--tier-vip:hover,
+.stadium-section--tier-vip:focus-visible {
+    background:
+        linear-gradient(90deg, rgba(255,255,255,0.24) 1px, transparent 1px) 0 0 / 18px 100%,
+        #f59e0b;
+}
+
+.stadium-section--tier-away:hover,
+.stadium-section--tier-away:focus-visible {
+    background:
+        linear-gradient(90deg, rgba(255,255,255,0.24) 1px, transparent 1px) 0 0 / 18px 100%,
+        #2563eb;
+    color: #fff;
+}
+
+.stadium-section span {
+    position: absolute;
+    left: 50%;
+    top: -16px;
+    transform: translateX(-50%);
+    z-index: 2;
+    white-space: nowrap;
+    padding: 5px 9px;
+    border-radius: 999px;
+    background: #fff;
+    color: #38404a;
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: 0 3px 9px rgba(15, 23, 42, 0.18);
+}
+
+.stadium-section em {
+    position: absolute;
+    left: 50%;
+    bottom: 4px;
+    transform: translateX(-50%);
+    width: max-content;
+    max-width: 90%;
+    opacity: 0;
+    color: currentColor;
+    font-size: 9px;
+    font-style: normal;
+    font-weight: 800;
+    text-transform: uppercase;
+    transition: opacity 160ms ease;
+    pointer-events: none;
+}
+
+.stadium-section:hover em,
+.stadium-section:focus-visible em,
+.stadium-section--active em {
+    opacity: 1;
+}
+
+.stadium-section span::before {
+    content: "";
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 6px;
+    border-radius: 999px;
+    background: #6a9c32;
+}
+
+.stadium-section--vip span::before {
+    background: #ef4444;
+}
+
+.stadium-section--away span::before {
+    background: #0757d8;
+}
+
+.stadium-section--active {
+    z-index: 4;
+    outline: 3px solid #43003f;
+    border-color: #43003f;
+    transform: translateY(-1px);
+}
+
+.stadium-section--active.stadium-section--tier-standard {
+    background: #c7ccd5;
+}
+
+.stadium-section--active.stadium-section--tier-best {
+    background: #8fd19a;
+}
+
+.stadium-section--active.stadium-section--tier-premium {
+    background: #4aa66a;
+}
+
+.stadium-section--active.stadium-section--tier-vip {
+    background: #f59e0b;
+}
+
+.stadium-section--active.stadium-section--tier-away {
+    background: #2563eb;
+    color: #fff;
+}
+
+.pitch {
+    position: absolute;
+    left: 20.5%;
+    top: 50%;
+    z-index: 3;
+    width: 59%;
+    height: 43%;
+    transform: translateY(-50%);
+    border: 13px solid #ff3d2e;
+    border-radius: 22px;
+    background:
+        linear-gradient(90deg, rgba(255,255,255,0.14) 1px, transparent 1px) 0 0 / 12.5% 100%,
+        repeating-linear-gradient(90deg, #2f9451 0 10%, #278648 10% 20%);
+    box-shadow: 0 0 0 1px #e7ebe9 inset;
+}
+
+.pitch::before {
+    content: "";
+    position: absolute;
+    inset: 7%;
+    border: 2px solid rgba(255,255,255,0.62);
+}
+
+.center-circle {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 64px;
+    height: 64px;
+    transform: translate(-50%, -50%);
+    border: 2px solid rgba(255,255,255,0.66);
+    border-radius: 999px;
+}
+
+.half-line {
+    position: absolute;
+    left: 50%;
+    top: 8%;
+    bottom: 8%;
+    width: 2px;
+    transform: translateX(-50%);
+    background: rgba(255,255,255,0.62);
+}
+
+.pitch-ticket-icon {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 2;
+    display: grid;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    transform: translate(-50%, -50%);
+    border-radius: 8px;
+    background: #fff;
+    color: #2f9451;
+}
+
+.box {
+    position: absolute;
+    top: 30%;
+    width: 15%;
+    height: 40%;
+    border: 2px solid rgba(255,255,255,0.65);
+}
+
+.six-yard {
+    position: absolute;
+    top: 40%;
+    width: 8%;
+    height: 20%;
+    border: 2px solid rgba(255,255,255,0.65);
+}
+
+.six-yard--left {
+    left: 8%;
+}
+
+.six-yard--right {
+    right: 8%;
+}
+
+.box--left {
+    left: 8%;
+}
+
+.box--right {
+    right: 8%;
+}
+
+.stand {
+    position: absolute;
+    z-index: 2;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.22);
+}
+
+.stand--top {
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.stand--bottom {
+    bottom: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.stand--left {
+    left: -11px;
+    top: 50%;
+    transform: translateY(-50%) rotate(-90deg);
+}
+
+.stand--right {
+    right: -7px;
+    top: 50%;
+    transform: translateY(-50%) rotate(90deg);
+}
+
+@media (max-width: 1100px) {
+    .stadium-map {
+        width: min(920px, 100%);
+        max-height: none;
+    }
+}
+
+@media (max-width: 720px) {
+    .ticket-mini-map span {
+        margin-top: 32px;
+    }
+
+    .stadium-map {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .stadium-section span {
+        padding: 3px 6px;
+        font-size: 12px;
+    }
+
+    .stadium-section small {
+        display: none;
+    }
+}
