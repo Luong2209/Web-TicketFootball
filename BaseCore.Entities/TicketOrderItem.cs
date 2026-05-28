@@ -11,5 +11,6 @@ namespace BaseCore.Entities
         public TicketOrder TicketOrder { get; set; }
         public TicketListing TicketListing { get; set; }
         public List<ETicket> ETickets { get; set; } = new();
+        public List<TicketOrderSeat> TicketOrderSeats { get; set; } = new();
     }
 }

@@ -15,6 +15,8 @@ namespace BaseCore.Entities
         public decimal MapHeight { get; set; }
 
         public Stadium Stadium { get; set; }
+        public List<SeatBlock> SeatBlocks { get; set; } = new();
         public List<TicketListing> TicketListings { get; set; } = new();
+        public List<SeatPlace> SeatPlaces { get; set; } = new();
     }
 }

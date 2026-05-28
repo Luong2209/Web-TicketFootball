@@ -4,6 +4,7 @@ using BaseCore.Repository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BaseCore.Repository.Migrations
 {
     [DbContext(typeof(SqlServerDbContext))]
-    partial class SqlServerDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260527161731_AddSeatInventory")]
+    partial class AddSeatInventory
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -633,49 +636,6 @@ namespace BaseCore.Repository.Migrations
                         });
                 });
 
-            modelBuilder.Entity("BaseCore.Entities.SeatBlock", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("nvarchar(120)");
-
-                    b.Property<int>("StadiumId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("StadiumSectionId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("StadiumId");
-
-                    b.HasIndex("StadiumSectionId", "Code")
-                        .IsUnique();
-
-                    b.ToTable("SeatBlocks");
-                });
-
             modelBuilder.Entity("BaseCore.Entities.SeatPlace", b =>
                 {
                     b.Property<int>("Id")
@@ -700,9 +660,6 @@ namespace BaseCore.Repository.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
-                    b.Property<int?>("SeatBlockId")
-                        .HasColumnType("int");
-
                     b.Property<int>("SeatNumber")
                         .HasColumnType("int");
 
@@ -721,10 +678,6 @@ namespace BaseCore.Repository.Migrations
 
                     b.HasIndex("StadiumSectionId", "Code")
                         .IsUnique();
-
-                    b.HasIndex("SeatBlockId", "RowLabel", "SeatNumber")
-                        .IsUnique()
-                        .HasFilter("[SeatBlockId] IS NOT NULL");
 
                     b.ToTable("SeatPlaces");
                 });
@@ -1848,32 +1801,8 @@ namespace BaseCore.Repository.Migrations
                     b.Navigation("TicketOrder");
                 });
 
-            modelBuilder.Entity("BaseCore.Entities.SeatBlock", b =>
-                {
-                    b.HasOne("BaseCore.Entities.Stadium", "Stadium")
-                        .WithMany("SeatBlocks")
-                        .HasForeignKey("StadiumId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("BaseCore.Entities.StadiumSection", "StadiumSection")
-                        .WithMany("SeatBlocks")
-                        .HasForeignKey("StadiumSectionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Stadium");
-
-                    b.Navigation("StadiumSection");
-                });
-
             modelBuilder.Entity("BaseCore.Entities.SeatPlace", b =>
                 {
-                    b.HasOne("BaseCore.Entities.SeatBlock", "SeatBlock")
-                        .WithMany("SeatPlaces")
-                        .HasForeignKey("SeatBlockId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("BaseCore.Entities.Stadium", "Stadium")
                         .WithMany("SeatPlaces")
                         .HasForeignKey("StadiumId")
@@ -1885,8 +1814,6 @@ namespace BaseCore.Repository.Migrations
                         .HasForeignKey("StadiumSectionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("SeatBlock");
 
                     b.Navigation("Stadium");
 
@@ -2020,11 +1947,6 @@ namespace BaseCore.Repository.Migrations
                     b.Navigation("Rounds");
                 });
 
-            modelBuilder.Entity("BaseCore.Entities.SeatBlock", b =>
-                {
-                    b.Navigation("SeatPlaces");
-                });
-
             modelBuilder.Entity("BaseCore.Entities.SeatPlace", b =>
                 {
                     b.Navigation("MatchSeatInventories");
@@ -2034,8 +1956,6 @@ namespace BaseCore.Repository.Migrations
 
             modelBuilder.Entity("BaseCore.Entities.Stadium", b =>
                 {
-                    b.Navigation("SeatBlocks");
-
                     b.Navigation("SeatPlaces");
 
                     b.Navigation("Sections");
@@ -2043,8 +1963,6 @@ namespace BaseCore.Repository.Migrations
 
             modelBuilder.Entity("BaseCore.Entities.StadiumSection", b =>
                 {
-                    b.Navigation("SeatBlocks");
-
                     b.Navigation("SeatPlaces");
 
                     b.Navigation("TicketListings");

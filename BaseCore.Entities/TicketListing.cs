@@ -18,5 +18,6 @@ namespace BaseCore.Entities
         public StadiumSection StadiumSection { get; set; }
         public List<TicketOrderItem> TicketOrderItems { get; set; } = new();
         public List<CartItem> CartItems { get; set; } = new();
+        public List<MatchSeatInventory> SeatInventories { get; set; } = new();
     }
 }

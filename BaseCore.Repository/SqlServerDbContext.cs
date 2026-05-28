@@ -20,10 +20,14 @@ namespace BaseCore.Repository
         public DbSet<MatchRound> MatchRounds { get; set; }
         public DbSet<Stadium> Stadiums { get; set; }
         public DbSet<StadiumSection> StadiumSections { get; set; }
+        public DbSet<SeatBlock> SeatBlocks { get; set; }
+        public DbSet<SeatPlace> SeatPlaces { get; set; }
         public DbSet<FootballMatch> Matches { get; set; }
+        public DbSet<MatchSeatInventory> MatchSeatInventories { get; set; }
         public DbSet<TicketListing> TicketListings { get; set; }
         public DbSet<TicketOrder> TicketOrders { get; set; }
         public DbSet<TicketOrderItem> TicketOrderItems { get; set; }
+        public DbSet<TicketOrderSeat> TicketOrderSeats { get; set; }
         public DbSet<Cart> Carts { get; set; }
         public DbSet<CartItem> CartItems { get; set; }
         public DbSet<Payment> Payments { get; set; }
@@ -89,6 +93,45 @@ namespace BaseCore.Repository
                       .WithMany(s => s.Sections)
                       .HasForeignKey(e => e.StadiumId)
                       .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<SeatBlock>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Code).HasMaxLength(30).IsRequired();
+                entity.Property(e => e.Name).HasMaxLength(120).IsRequired();
+                entity.HasIndex(e => new { e.StadiumSectionId, e.Code }).IsUnique();
+                entity.HasOne(e => e.Stadium)
+                      .WithMany(e => e.SeatBlocks)
+                      .HasForeignKey(e => e.StadiumId)
+                      .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(e => e.StadiumSection)
+                      .WithMany(e => e.SeatBlocks)
+                      .HasForeignKey(e => e.StadiumSectionId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<SeatPlace>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.RowLabel).HasMaxLength(20).IsRequired();
+                entity.Property(e => e.Code).HasMaxLength(40).IsRequired();
+                entity.HasIndex(e => new { e.StadiumSectionId, e.Code }).IsUnique();
+                entity.HasIndex(e => new { e.SeatBlockId, e.RowLabel, e.SeatNumber })
+                      .IsUnique()
+                      .HasFilter("[SeatBlockId] IS NOT NULL");
+                entity.HasOne(e => e.Stadium)
+                      .WithMany(e => e.SeatPlaces)
+                      .HasForeignKey(e => e.StadiumId)
+                      .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(e => e.StadiumSection)
+                      .WithMany(e => e.SeatPlaces)
+                      .HasForeignKey(e => e.StadiumSectionId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(e => e.SeatBlock)
+                      .WithMany(e => e.SeatPlaces)
+                      .HasForeignKey(e => e.SeatBlockId)
+                      .OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<Season>(entity =>
@@ -169,6 +212,31 @@ namespace BaseCore.Repository
                       .OnDelete(DeleteBehavior.Restrict);
             });
 
+            modelBuilder.Entity<MatchSeatInventory>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Status).HasMaxLength(20).IsRequired();
+                entity.Property(e => e.HeldByUserId).HasMaxLength(450);
+                entity.HasIndex(e => new { e.MatchId, e.SeatPlaceId }).IsUnique();
+                entity.HasIndex(e => e.TicketListingId);
+                entity.HasOne(e => e.Match)
+                      .WithMany(e => e.SeatInventories)
+                      .HasForeignKey(e => e.MatchId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(e => e.SeatPlace)
+                      .WithMany(e => e.MatchSeatInventories)
+                      .HasForeignKey(e => e.SeatPlaceId)
+                      .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(e => e.TicketListing)
+                      .WithMany(e => e.SeatInventories)
+                      .HasForeignKey(e => e.TicketListingId)
+                      .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(e => e.HeldByUser)
+                      .WithMany()
+                      .HasForeignKey(e => e.HeldByUserId)
+                      .OnDelete(DeleteBehavior.SetNull);
+            });
+
             modelBuilder.Entity<TicketOrder>(entity =>
             {
                 entity.ToTable("Orders");
@@ -198,6 +266,21 @@ namespace BaseCore.Repository
                 entity.HasOne(e => e.TicketListing)
                       .WithMany(l => l.TicketOrderItems)
                       .HasForeignKey(e => e.TicketListingId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<TicketOrderSeat>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.SeatCode).HasMaxLength(40).IsRequired();
+                entity.HasIndex(e => new { e.OrderItemId, e.SeatPlaceId }).IsUnique();
+                entity.HasOne(e => e.OrderItem)
+                      .WithMany(e => e.TicketOrderSeats)
+                      .HasForeignKey(e => e.OrderItemId)
+                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(e => e.SeatPlace)
+                      .WithMany(e => e.TicketOrderSeats)
+                      .HasForeignKey(e => e.SeatPlaceId)
                       .OnDelete(DeleteBehavior.Restrict);
             });
 
@@ -251,6 +334,7 @@ namespace BaseCore.Repository
                 entity.Property(e => e.TicketCode).HasMaxLength(80).IsRequired();
                 entity.Property(e => e.QrCodePayload).HasMaxLength(1000).IsRequired();
                 entity.Property(e => e.HolderName).HasMaxLength(120).IsRequired();
+                entity.Property(e => e.SeatCode).HasMaxLength(40);
                 entity.Property(e => e.Status).HasMaxLength(40).IsRequired();
                 entity.HasIndex(e => e.TicketCode).IsUnique();
                 entity.HasOne(e => e.TicketOrder)

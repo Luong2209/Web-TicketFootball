@@ -10,5 +10,7 @@ namespace BaseCore.Entities
         public string ImageUrl { get; set; } = "";
 
         public List<StadiumSection> Sections { get; set; } = new();
+        public List<SeatBlock> SeatBlocks { get; set; } = new();
+        public List<SeatPlace> SeatPlaces { get; set; } = new();
     }
 }

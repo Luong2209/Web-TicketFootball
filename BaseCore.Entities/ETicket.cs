@@ -9,6 +9,7 @@ namespace BaseCore.Entities
         public string TicketCode { get; set; } = "";
         public string QrCodePayload { get; set; } = "";
         public string HolderName { get; set; } = "";
+        public string? SeatCode { get; set; }
         public string Status { get; set; } = "Issued";
         public DateTime IssuedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UsedAt { get; set; }

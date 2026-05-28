@@ -94,6 +94,7 @@ namespace BaseCore.APIService.Controllers
             var payment = await _dbContext.Payments
                 .Include(item => item.TicketOrder)
                     .ThenInclude(order => order.Items)
+                    .ThenInclude(item => item.TicketOrderSeats)
                 .Include(item => item.TicketOrder)
                     .ThenInclude(order => order.ETickets)
                 .FirstOrDefaultAsync(item => item.Id == id);
@@ -144,14 +145,52 @@ namespace BaseCore.APIService.Controllers
 
         private async Task IssueTickets(TicketOrder order)
         {
-            var existingItemIds = await _dbContext.ETickets
+            var existingTickets = await _dbContext.ETickets
                 .Where(item => item.TicketOrderId == order.Id)
-                .Select(item => item.TicketOrderItemId)
+                .Select(item => new { item.TicketOrderItemId, item.SeatCode })
                 .ToListAsync();
 
             foreach (var item in order.Items)
             {
-                var issuedCount = existingItemIds.Count(id => id == item.Id);
+                if (item.TicketOrderSeats.Count > 0)
+                {
+                    foreach (var orderSeat in item.TicketOrderSeats)
+                    {
+                        var alreadyIssued = existingTickets.Any(ticket =>
+                            ticket.TicketOrderItemId == item.Id
+                            && ticket.SeatCode == orderSeat.SeatCode);
+
+                        if (alreadyIssued)
+                        {
+                            continue;
+                        }
+
+                        var ticketCode = BuildCode("ETK");
+                        _dbContext.ETickets.Add(new ETicket
+                        {
+                            TicketOrderId = order.Id,
+                            TicketOrderItemId = item.Id,
+                            UserId = order.UserId,
+                            TicketCode = ticketCode,
+                            QrCodePayload = JsonSerializer.Serialize(new
+                            {
+                                type = "football-ticket",
+                                ticketCode,
+                                seatCode = orderSeat.SeatCode,
+                                orderId = order.Id,
+                                orderItemId = item.Id
+                            }),
+                            HolderName = order.CustomerName,
+                            SeatCode = orderSeat.SeatCode,
+                            Status = "Issued",
+                            IssuedAt = DateTime.UtcNow
+                        });
+                    }
+
+                    continue;
+                }
+
+                var issuedCount = existingTickets.Count(ticket => ticket.TicketOrderItemId == item.Id);
                 for (var index = issuedCount; index < item.Quantity; index++)
                 {
                     var ticketCode = BuildCode("ETK");
@@ -207,6 +246,7 @@ namespace BaseCore.APIService.Controllers
                 ticket.TicketOrderItemId,
                 ticket.TicketCode,
                 ticket.QrCodePayload,
+                ticket.SeatCode,
                 ticket.HolderName,
                 ticket.Status,
                 ticket.IssuedAt,

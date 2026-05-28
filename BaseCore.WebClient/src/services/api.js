@@ -54,6 +54,7 @@ export const matchApi = {
     getAll: (params) => api.get('/matches', { params }),
     getBySlug: (slug) => api.get(`/matches/${slug}`),
     getTickets: (slug) => api.get(`/matches/${slug}/tickets`),
+    getSeats: (slug, sectionId, blockCode) => api.get(`/matches/${slug}/seats`, { params: { sectionId, blockCode } }),
     getRounds: (params) => api.get('/matches/rounds', { params }),
 };
 
@@ -61,6 +62,23 @@ export const ticketApi = {
     createOrder: (data) => api.post('/tickets/orders', data),
     getMyOrders: () => api.get('/tickets/orders'),
     getMyETickets: () => api.get('/tickets/etickets'),
+    holdSeats: (data) => api.post('/tickets/seat-holds', data),
+    cancelSeatHolds: (data) => api.delete('/tickets/seat-holds', { data }),
+    cancelSeatHoldsOnUnload: (data) => {
+        const token = localStorage.getItem(AUTH_STORAGE_KEYS.token);
+        const headers = { 'Content-Type': 'application/json' };
+
+        if (token) {
+            headers.Authorization = `Bearer ${token}`;
+        }
+
+        return fetch(`${API_BASE_URL}/tickets/seat-holds`, {
+            method: 'DELETE',
+            headers,
+            body: JSON.stringify(data),
+            keepalive: true,
+        });
+    },
 };
 
 export const paymentApi = {

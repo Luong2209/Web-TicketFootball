@@ -1,3 +1,4 @@
+using BaseCore.APIService.Services;
 using BaseCore.Repository;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -9,10 +10,12 @@ namespace BaseCore.APIService.Controllers
     public class MatchesController : ControllerBase
     {
         private readonly SqlServerDbContext _dbContext;
+        private readonly SeatHoldService _seatHoldService;
 
-        public MatchesController(SqlServerDbContext dbContext)
+        public MatchesController(SqlServerDbContext dbContext, SeatHoldService seatHoldService)
         {
             _dbContext = dbContext;
+            _seatHoldService = seatHoldService;
         }
 
         [HttpGet]
@@ -213,6 +216,78 @@ namespace BaseCore.APIService.Controllers
                 .ToListAsync();
 
             return Ok(new { sections, listings });
+        }
+
+        [HttpGet("{slug}/seats")]
+        public async Task<IActionResult> GetSeats(string slug, [FromQuery] int? sectionId, [FromQuery] string? blockCode)
+        {
+            if (!sectionId.HasValue)
+            {
+                return BadRequest(new { message = "sectionId is required" });
+            }
+
+            await _seatHoldService.ReleaseExpiredSeatHoldsAsync();
+
+            var match = await _dbContext.Matches
+                .AsNoTracking()
+                .FirstOrDefaultAsync(item => item.Slug == slug);
+
+            if (match == null)
+            {
+                return NotFound(new { message = "Match not found" });
+            }
+
+            var normalizedBlockCode = blockCode?.Trim();
+            if (!string.IsNullOrWhiteSpace(normalizedBlockCode))
+            {
+                var blockExists = await _dbContext.SeatBlocks
+                    .AsNoTracking()
+                    .AnyAsync(block => block.StadiumSectionId == sectionId.Value
+                        && block.Code == normalizedBlockCode
+                        && block.IsActive);
+
+                if (!blockExists)
+                {
+                    return NotFound(new { message = "Seat block not found for this section" });
+                }
+            }
+
+            var seatQuery = _dbContext.MatchSeatInventories
+                .Include(inventory => inventory.SeatPlace)
+                    .ThenInclude(seat => seat.SeatBlock)
+                .Include(inventory => inventory.TicketListing)
+                .Where(inventory => inventory.MatchId == match.Id
+                    && inventory.SeatPlace.StadiumSectionId == sectionId.Value);
+
+            if (!string.IsNullOrWhiteSpace(normalizedBlockCode))
+            {
+                seatQuery = seatQuery.Where(inventory => inventory.SeatPlace.SeatBlock != null
+                    && inventory.SeatPlace.SeatBlock.Code == normalizedBlockCode);
+            }
+
+            var seats = await seatQuery
+                .AsNoTracking()
+                .OrderBy(inventory => inventory.SeatPlace.SeatBlock != null ? inventory.SeatPlace.SeatBlock.Code : "")
+                .ThenBy(inventory => inventory.SeatPlace.RowLabel)
+                .ThenBy(inventory => inventory.SeatPlace.SeatNumber)
+                .Select(inventory => new
+                {
+                    InventoryId = inventory.Id,
+                    SeatPlaceId = inventory.SeatPlaceId,
+                    BlockId = inventory.SeatPlace.SeatBlockId,
+                    BlockCode = inventory.SeatPlace.SeatBlock != null ? inventory.SeatPlace.SeatBlock.Code : null,
+                    SectionName = inventory.SeatPlace.StadiumSection.Name,
+                    Code = inventory.SeatPlace.Code,
+                    Row = inventory.SeatPlace.RowLabel,
+                    SeatNumber = inventory.SeatPlace.SeatNumber.ToString(),
+                    inventory.Status,
+                    Price = inventory.TicketListing.UnitPrice,
+                    inventory.TicketListingId,
+                    inventory.HoldExpiresAt
+                })
+                .ToListAsync();
+
+            return Ok(seats);
         }
     }
 }

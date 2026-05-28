@@ -20,5 +20,6 @@ namespace BaseCore.Entities
         public Season Season { get; set; }
         public MatchRound Round { get; set; }
         public List<TicketListing> TicketListings { get; set; } = new();
+        public List<MatchSeatInventory> SeatInventories { get; set; } = new();
     }
 }
