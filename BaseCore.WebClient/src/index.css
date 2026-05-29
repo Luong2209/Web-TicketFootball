@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: Inter, "Be Vietnam Pro", Arial, sans-serif;
+  --color-plum-950: #43003f;
+  --color-plum-900: #5a0053;
+  --color-ink-900: #252525;
+}
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+  }
+
+  button,
+  select,
+  input {
+    font: inherit;
+  }
+}
+
